@@ -38,6 +38,9 @@ public class UserService {
     }
 
     private UserResponse toResponse(User user) {
+        if (user.getId() == null) {
+            throw new BusinessException(HttpStatus.INTERNAL_SERVER_ERROR, "User id missing");
+        }
         return new UserResponse(user.getId(), user.getEmail(), user.getNickname());
     }
 }

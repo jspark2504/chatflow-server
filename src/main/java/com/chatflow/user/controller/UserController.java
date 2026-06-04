@@ -19,10 +19,11 @@ public class UserController {
 
     private final UserService userService;
 
+    /** JWT에 담긴 사용자 정보 반환 (DB 재조회 없음 — 토큰과 동일) */
     @GetMapping("/me")
     public Mono<UserResponse> me() {
         return CurrentUser.auth()
-                .flatMap(principal -> userService.me(principal.userId()));
+                .map(p -> new UserResponse(p.userId(), p.email(), p.nickname()));
     }
 
     @GetMapping("/search")
@@ -30,7 +31,7 @@ public class UserController {
         return userService.searchByNickname(nickname);
     }
 
-    @GetMapping("/{userId}")
+    @GetMapping("/{userId:\\d+}")
     public Mono<UserResponse> getUser(@PathVariable long userId) {
         return userService.findById(userId);
     }

@@ -48,6 +48,9 @@ public class JwtAuthenticationWebFilter implements WebFilter {
             long userId = Long.parseLong(claims.getSubject());
             String email = claims.get("email", String.class);
             String nickname = claims.get("nickname", String.class);
+            if (nickname == null) {
+                nickname = claims.get("username", String.class);
+            }
             var principal = new AuthPrincipal(userId, email, nickname);
             var auth = new UsernamePasswordAuthenticationToken(
                     principal,
