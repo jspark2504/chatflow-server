@@ -1,5 +1,6 @@
 package com.chatflow.infra.security;
 
+import com.chatflow.config.JwtProperties;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;

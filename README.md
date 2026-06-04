@@ -89,10 +89,15 @@ Flyway `V2__planning_schema.sql` 적용 시 생성:
 
 ```
 com.chatflow/
-  common/error/
-  user/controller/  # AuthController, UserController
-  user/service/
-  infra/security/
+  auth/          # signup, login (JWT 발급)
+  user/          # 프로필, 검색
+  chat/          # 2단계 예정
+  websocket/     # 3단계 예정
+  common/        # 공통 예외
+  config/        # Security, JWT 설정
+  redis/         # 3~5단계 예정
+  kafka/         # 7단계 예정
+  infra/         # JWT 필터, 토큰 서비스
 ```
 
 ## 인증 설계 (면접용 한 줄)

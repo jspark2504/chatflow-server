@@ -29,8 +29,14 @@ Spring Boot, Spring WebFlux, WebSocket, Redis, MySQL, Docker, GitHub Actions, AW
 
 ```
 src/main/java/com/chatflow/
+  auth/       controller, service, dto
+  user/       controller, service, domain, repository, dto
+  chat/       (2단계)
+  websocket/  (3단계)
   common/error/
-  user/{controller,service,domain,repository,dto}
+  config/     SecurityConfig, JwtProperties
+  redis/      (3~5단계)
+  kafka/      (7단계)
   infra/security/
 ```
 

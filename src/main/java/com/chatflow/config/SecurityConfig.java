@@ -1,4 +1,4 @@
-package com.chatflow.infra.security;
+package com.chatflow.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
