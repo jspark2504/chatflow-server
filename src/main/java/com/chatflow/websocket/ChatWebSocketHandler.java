@@ -40,7 +40,10 @@ public class ChatWebSocketHandler implements WebSocketHandler {
         long userId = principal.userId();
         return session.receive()
                 .map(msg -> msg.getPayloadAsText())
-                .concatMap(text -> handleInbound(session, userId, text))
+                .concatMap(text -> handleInbound(session, userId, text)
+                        .onErrorResume(BusinessException.class,
+                                ex -> sendError(session, ex.getMessage()))
+                        .onErrorResume(ex -> sendError(session, "Request failed")))
                 .doFinally(signal -> sessionRegistry.removeSession(session))
                 .then();
     }
@@ -95,9 +98,7 @@ public class ChatWebSocketHandler implements WebSocketHandler {
         SendMessageRequest request = new SendMessageRequest(
                 inbound.content().trim(),
                 inbound.messageType());
-        return chatMessageService.sendMessage(roomId, userId, request)
-                .then()
-                .onErrorResume(BusinessException.class, ex -> sendError(session, ex.getMessage()));
+        return chatMessageService.sendMessage(roomId, userId, request).then();
     }
 
     private Mono<Void> sendError(WebSocketSession session, String message) {
