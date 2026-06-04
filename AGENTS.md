@@ -6,9 +6,10 @@
 
 실시간 채팅 백엔드 토이/포트폴리오. 상세 목표·로드맵은 `.cursor/rules/chatflow-project-context.mdc`.
 
-## 스택 (목표)
+## 스택
 
-Spring Boot, Spring WebFlux, WebSocket, Redis, MySQL, Docker, GitHub Actions, AWS, Kafka
+Java 17, Boot 3.2.5, WebFlux, R2DBC, Maven, MySQL, JWT — `docs/TECH_STACK.md`  
+(JPA·Gradle 사용 안 함)
 
 ## 단계별 허용 기술
 

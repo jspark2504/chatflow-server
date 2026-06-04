@@ -11,9 +11,10 @@ alwaysApply: true
 
 이직 포트폴리오 · 최신 백엔드 학습 · 실무 수준 경험 · DevOps/클라우드 · 향후 서비스 확장
 
-## 목표 스택
+## 기술 스택
 
-Spring Boot · Spring WebFlux · WebSocket · Redis · MySQL · Docker · GitHub Actions · AWS · Kafka
+Java 17 · Spring Boot 3.2.5 · WebFlux · R2DBC · Maven · MySQL · JWT  
+(로드맵: WebSocket · Redis · Kafka · Docker · GitHub Actions · AWS)
 
 ## 로드맵 (순서 고정)
 
