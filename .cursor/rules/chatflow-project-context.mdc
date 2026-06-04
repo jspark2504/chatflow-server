@@ -9,33 +9,28 @@ alwaysApply: true
 
 ## 목적
 
-이직 포트폴리오 · 최신 백엔드 학습 · 실무 수준 경험 · DevOps/클라우드 · 향후 서비스 확장
+이직 포트폴리오 · 최신 백엔드 학습 · 실무 수준 경험 · 향후 서비스 확장
 
 ## 기술 스택
 
-Java 17 · Spring Boot 3.2.5 · WebFlux · R2DBC · Maven · MySQL · JWT  
-(로드맵: WebSocket · Redis · Kafka · Docker · GitHub Actions · AWS)
+Java 17 · Spring Boot 3.2.5 · WebFlux · R2DBC · Maven · MySQL · JWT
 
-## 로드맵 (순서 고정)
+## 로드맵
 
 | 단계 | 범위 |
 |------|------|
-| 1 | 회원가입, 로그인(JWT) |
-| 2 | 채팅방, 1:1, 그룹 채팅 |
-| 3 | WebSocket, Redis Pub/Sub |
-| 4 | Docker 배포 |
-| 5 | GitHub Actions CI/CD |
-| 6 | AWS 배포 |
-| 7 | Kafka, 이벤트 기반 구조 |
+| 1 | 회원·JWT (완료) |
+| 2 | 채팅 REST — 방·메시지 (**현재**) |
+| 3 | WebSocket · Redis |
+| 4 | 프론트 Next.js (별도) |
+| 5 | Kafka |
+| 6 | Docker |
+| 7 | CI/CD |
+| 8 | AWS |
 
-현재 진행 단계는 `AGENTS.md`의 **현재 단계**를 따른다.
+`AGENTS.md`의 **현재 단계**를 따른다.
 
-## 프로젝트 원칙
+## 원칙
 
-- 단순 CRUD 프로젝트 지양
-- 실무 구조 우선, 확장 가능 설계, MSA는 필요 시만
-- 제안 기준: **지금 경력에 가장 도움이 되는 방향** (WebFlux·Redis·메시징 시너지)
-
-## 후보에서 제외하지 않은 확장 주제
-
-협업 메신저, 알림 플랫폼, 메시지 중계, 실시간 이벤트 처리 — 본 repo는 **실시간 채팅**이 1순위.
+- 실무 구조 · 면접 설명 가능 · WebFlux·메시징 시너지 우선
+- 단계에 없는 기술은 해당 단계 전까지 도입하지 않음
