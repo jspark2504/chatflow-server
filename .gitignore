@@ -2,9 +2,6 @@ target/
 !.mvn/wrapper/maven-wrapper.jar
 .idea/
 *.iml
-.classpath
-.project
-.settings/
 bin/
 *.log
 .env
