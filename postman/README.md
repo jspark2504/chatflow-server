@@ -15,7 +15,7 @@
 ## 사전 조건
 
 ```bash
-docker compose up -d   # MySQL 3306 + Redis 6379
+docker compose up -d   # MySQL 3306 + Redis 6379 + Kafka 9092
 ```
 
 - 앱 **8081** 실행 (STS / `mvn spring-boot:run`)

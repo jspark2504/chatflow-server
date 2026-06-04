@@ -5,6 +5,7 @@ import com.chatflow.chat.dto.MessageResponse;
 import com.chatflow.chat.dto.SendMessageRequest;
 import com.chatflow.chat.repository.ChatMessageRepository;
 import com.chatflow.common.error.BusinessException;
+import com.chatflow.kafka.ChatMessageKafkaPublisher;
 import com.chatflow.redis.ChatMessageRedisPublisher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -23,6 +24,7 @@ public class ChatMessageService {
     private final ChatMessageRepository chatMessageRepository;
     private final ChatRoomService chatRoomService;
     private final ChatMessageRedisPublisher chatMessageRedisPublisher;
+    private final ChatMessageKafkaPublisher chatMessageKafkaPublisher;
 
     public Mono<MessageResponse> sendMessage(long roomId, long senderId, SendMessageRequest request) {
         String type = request.messageType() == null || request.messageType().isBlank()
@@ -43,7 +45,9 @@ public class ChatMessageService {
                                 HttpStatus.INTERNAL_SERVER_ERROR, "Message id missing after save"));
                     }
                     MessageResponse response = toResponse(saved);
-                    return chatMessageRedisPublisher.publish(roomId, response).thenReturn(response);
+                    return chatMessageRedisPublisher.publish(roomId, response)
+                            .then(chatMessageKafkaPublisher.publish(roomId, response))
+                            .thenReturn(response);
                 });
     }
 

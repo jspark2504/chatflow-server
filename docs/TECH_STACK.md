@@ -30,7 +30,7 @@
 |------|------|------|------|
 | Realtime | WebSocket (JSON) | 3 | **구현** (`/ws/chat`) |
 | Pub/Sub | Redis | 3 | **구현** (`chat:room:{id}`) |
-| Messaging | Kafka | 5 | 예정 |
+| Messaging | Kafka | 5 | **구현** (`chat.message.sent`) |
 | CI/CD | GitHub Actions | 7 | 예정 |
 | Cloud | AWS | 8 | 예정 |
 

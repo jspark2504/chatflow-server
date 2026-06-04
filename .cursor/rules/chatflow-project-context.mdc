@@ -21,9 +21,9 @@ Java 17 · Spring Boot 3.2.5 · WebFlux · R2DBC · Maven · MySQL · JWT
 |------|------|
 | 1 | 회원·JWT (완료) |
 | 2 | 채팅 REST (완료) |
-| 3 | WebSocket · Redis (**현재**) |
+| 3 | WebSocket · Redis (완료) |
 | 4 | 프론트 Next.js (별도) |
-| 5 | Kafka |
+| 5 | Kafka (**현재**) |
 | 6 | Docker |
 | 7 | CI/CD |
 | 8 | AWS |
