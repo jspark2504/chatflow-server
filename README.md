@@ -1,22 +1,38 @@
-# chatflow-server
+# ChatFlow (chatflow-server)
 
 WebFlux, Redis Pub/Sub, Kafka 기반 이벤트 아키텍처 학습을 위한 **실시간 채팅** 백엔드 (포트폴리오).
 
 **현재: 1단계** — 회원가입 · 로그인(JWT)
+
+## 프로젝트 소개
+
+실시간 채팅 서비스를 구현하며 WebFlux, WebSocket, Redis Pub/Sub, Kafka 등을 활용해  
+이벤트 기반 아키텍처와 대규모 메시지 처리 구조를 학습하는 개인 프로젝트입니다.
+
+## 목표
+
+- 실시간 메시징 시스템 구현
+- Reactive Programming(WebFlux) 실전 적용
+- Redis 기반 메시지 브로드캐스팅 구조 설계
+- Kafka 기반 이벤트 구조 확장 학습
+- Docker, CI/CD, AWS 배포 경험 확보
+
+## 기술 스택
+
+| 구분 | 기술 |
+|------|------|
+| 현재 구현 | Java 17, Spring Boot 3.2, WebFlux, R2DBC, MySQL, Flyway, JWT (jjwt), BCrypt |
+| 로드맵 | WebSocket, Redis Pub/Sub, Docker, GitHub Actions, AWS, Kafka |
 
 ## 로드맵
 
 1. 회원가입 · 로그인 (JWT) ← **현재**
 2. 채팅방 · 1:1 · 그룹 채팅
 3. WebSocket · Redis Pub/Sub
-4. Docker
+4. Docker 배포
 5. GitHub Actions CI/CD
-6. AWS
+6. AWS 배포
 7. Kafka · 이벤트 기반 구조
-
-## 스택
-
-Java 17 · Spring Boot 3.2 · WebFlux · R2DBC · MySQL · Flyway · JWT (jjwt) · BCrypt
 
 ## 로컬 실행
 
@@ -45,17 +61,14 @@ mvn spring-boot:run
 ### 예시
 
 ```bash
-# 회원가입
 curl -s -X POST http://localhost:8081/api/users/register \
   -H "Content-Type: application/json" \
   -d "{\"username\":\"alice\",\"password\":\"password1\"}"
 
-# 로그인
 curl -s -X POST http://localhost:8081/api/users/login \
   -H "Content-Type: application/json" \
   -d "{\"username\":\"alice\",\"password\":\"password1\"}"
 
-# 내 정보 (토큰 치환)
 curl -s http://localhost:8081/api/users/me \
   -H "Authorization: Bearer YOUR_TOKEN"
 ```
