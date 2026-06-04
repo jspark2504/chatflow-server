@@ -1,0 +1,29 @@
+---
+description: Spring Boot / WebFlux Java 코딩·패키지 컨벤션
+globs: "**/*.{java,gradle,kts,yml,yaml,properties}"
+alwaysApply: false
+---
+
+# Spring / WebFlux 컨벤션
+
+## 패키지 (권장)
+
+- `api` / `presentation` — Controller, WebSocket handler, DTO
+- `application` — Use case, 서비스 오케스트레이션
+- `domain` — 엔티티, 도메인 서비스, 리포지토리 인터페이스
+- `infrastructure` — JPA, Redis, 외부 연동 구현
+
+의존 방향: presentation → application → domain ← infrastructure
+
+## 기술
+
+- HTTP API: WebFlux (`RouterFunction` 또는 `@RestController` 중 프로젝트에서 하나로 통일)
+- 인증: JWT (Stateless), Security WebFlux 필터 체인
+- 영속: MySQL + R2DBC 또는 JPA(블로킹은 별도 스레드 풀·전략 명시)
+- 캐시·Pub/Sub: Redis (3단계 이후 Pub/Sub)
+
+## 구현 시
+
+- 공개 API는 요청/응답 DTO 분리, 도메인 엔티티 직접 노출 지양
+- 예외는 `@ControllerAdvice` 등으로 일관된 에러 응답
+- 설정·시크릿은 환경 변수·`application-*.yml`, 코드·커밋에 비밀값 금지

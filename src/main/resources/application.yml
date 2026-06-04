@@ -1,0 +1,25 @@
+spring:
+  application:
+    name: chatflow-server
+  r2dbc:
+    url: r2dbc:mysql://localhost:3306/chatflow?sslMode=DISABLED&allowPublicKeyRetrieval=true
+    username: chatflow
+    password: chatflow
+  flyway:
+    enabled: true
+    url: jdbc:mysql://localhost:3306/chatflow?sslMode=DISABLED&allowPublicKeyRetrieval=true
+    user: chatflow
+    password: chatflow
+    locations: classpath:db/migration
+
+server:
+  port: 8081
+
+chatflow:
+  jwt:
+    secret: "dev-only-change-me-please-use-at-least-32-bytes-for-hmac-sha256-keys"
+    expiration-ms: 86400000
+
+logging:
+  level:
+    com.chatflow: INFO

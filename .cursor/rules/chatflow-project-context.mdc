@@ -1,0 +1,40 @@
+---
+description: Chatflow 목표, 로드맵, 스택, 프로젝트 원칙
+alwaysApply: true
+---
+
+# Chatflow Server
+
+실시간 채팅 서비스. WebFlux, Redis Pub/Sub, Kafka 기반 이벤트 아키텍처 학습·포트폴리오.
+
+## 목적
+
+이직 포트폴리오 · 최신 백엔드 학습 · 실무 수준 경험 · DevOps/클라우드 · 향후 서비스 확장
+
+## 목표 스택
+
+Spring Boot · Spring WebFlux · WebSocket · Redis · MySQL · Docker · GitHub Actions · AWS · Kafka
+
+## 로드맵 (순서 고정)
+
+| 단계 | 범위 |
+|------|------|
+| 1 | 회원가입, 로그인(JWT) |
+| 2 | 채팅방, 1:1, 그룹 채팅 |
+| 3 | WebSocket, Redis Pub/Sub |
+| 4 | Docker 배포 |
+| 5 | GitHub Actions CI/CD |
+| 6 | AWS 배포 |
+| 7 | Kafka, 이벤트 기반 구조 |
+
+현재 진행 단계는 `AGENTS.md`의 **현재 단계**를 따른다.
+
+## 프로젝트 원칙
+
+- 단순 CRUD 프로젝트 지양
+- 실무 구조 우선, 확장 가능 설계, MSA는 필요 시만
+- 제안 기준: **지금 경력에 가장 도움이 되는 방향** (WebFlux·Redis·메시징 시너지)
+
+## 후보에서 제외하지 않은 확장 주제
+
+협업 메신저, 알림 플랫폼, 메시지 중계, 실시간 이벤트 처리 — 본 repo는 **실시간 채팅**이 1순위.
