@@ -71,12 +71,27 @@ mvn spring-boot:run
 
 회원 필드: `email`, `password`, `nickname` (기획문서 DB/API 명세)
 
-### 예시
+### 예시 (한글 nickname)
+
+**PowerShell 5** — `-Body '...'` 문자열은 한글이 깨질 수 있음 → 스크립트 사용:
+
+```powershell
+cd C:\Users\parkj\Documents\GitHub\chatflow-server
+.\scripts\api-signup.ps1 -Email "test3@test.com" -Nickname "홍길동"
+```
+
+**curl.exe** (Windows):
+
+```bash
+curl.exe -s -X POST http://localhost:8081/api/auth/signup -H "Content-Type: application/json; charset=utf-8" --data-raw "{\"email\":\"test3@test.com\",\"password\":\"password1\",\"nickname\":\"홍길동\"}"
+```
+
+**bash curl:**
 
 ```bash
 curl -s -X POST http://localhost:8081/api/auth/signup \
-  -H "Content-Type: application/json" \
-  -d "{\"email\":\"test@test.com\",\"password\":\"password1\",\"nickname\":\"홍길동\"}"
+  -H "Content-Type: application/json; charset=utf-8" \
+  -d '{"email":"test3@test.com","password":"password1","nickname":"홍길동"}'
 
 curl -s -X POST http://localhost:8081/api/auth/login \
   -H "Content-Type: application/json" \

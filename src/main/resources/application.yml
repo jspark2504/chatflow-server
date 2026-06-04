@@ -7,7 +7,7 @@ spring:
     password: chatflow
   flyway:
     enabled: true
-    url: jdbc:mysql://localhost:3306/chatflow?sslMode=DISABLED&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://localhost:3306/chatflow?sslMode=DISABLED&allowPublicKeyRetrieval=true&useUnicode=true&characterEncoding=UTF-8&connectionCollation=utf8mb4_unicode_ci
     user: chatflow
     password: chatflow
     locations: classpath:db/migration
@@ -23,3 +23,4 @@ chatflow:
 logging:
   level:
     com.chatflow: INFO
+    org.springframework.r2dbc: DEBUG
