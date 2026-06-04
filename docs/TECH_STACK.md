@@ -24,15 +24,15 @@
 
 ---
 
-## 로드맵에 따른 추가 예정 (미구현)
+## 로드맵에 따른 추가
 
-| 구분 | 기술 | 단계 |
-|------|------|------|
-| Realtime | WebSocket (STOMP) | 3 |
-| Cache | Redis | 3~5 |
-| Messaging | Kafka | 7 |
-| CI/CD | GitHub Actions | 5 |
-| Cloud | AWS | 6 |
+| 구분 | 기술 | 단계 | 상태 |
+|------|------|------|------|
+| Realtime | WebSocket (JSON) | 3 | **구현** (`/ws/chat`) |
+| Pub/Sub | Redis | 3 | **구현** (`chat:room:{id}`) |
+| Messaging | Kafka | 5 | 예정 |
+| CI/CD | GitHub Actions | 7 | 예정 |
+| Cloud | AWS | 8 | 예정 |
 
 ---
 

@@ -5,6 +5,10 @@ spring:
     url: r2dbc:mysql://localhost:3306/chatflow?sslMode=DISABLED&allowPublicKeyRetrieval=true
     username: chatflow
     password: chatflow
+  data:
+    redis:
+      host: localhost
+      port: 6379
   flyway:
     enabled: true
     url: jdbc:mysql://localhost:3306/chatflow?sslMode=DISABLED&allowPublicKeyRetrieval=true&useUnicode=true&characterEncoding=UTF-8&connectionCollation=utf8mb4_unicode_ci

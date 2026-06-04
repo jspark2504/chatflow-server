@@ -1,0 +1,23 @@
+{
+  "info": {
+    "_postman_id": "chatflow-websocket-readme-only",
+    "name": "Chatflow WebSocket (참고 — Import 비권장)",
+    "description": "# ⚠️ 이 JSON을 Import해도 WebSocket이 되지 않습니다\n\nPostman v2.1 JSON은 `ws://` 를 **HTTP GET**으로만 불러옵니다.\n\n## 대신 이렇게 테스트하세요\n\n1. **브라우저:** `postman/ws-test.html` (권장)\n2. **PowerShell:** `scripts/ws-chat.ps1`\n3. **Postman:** New → **WebSocket** (HTTP 아님) → URL:\n   `ws://localhost:8081/ws/chat?token={{accessToken}}`\n\n자세한 설명: `postman/README-WebSocket.md`",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "accessToken", "value": "" },
+    { "key": "roomId", "value": "1" }
+  ],
+  "item": [
+    {
+      "name": "📖 README — WebSocket 테스트 방법",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "http://localhost:8081/api/users/me",
+        "description": "이 요청은 안내용입니다.\n\n실제 테스트:\n- postman/ws-test.html\n- postman/README-WebSocket.md"
+      }
+    }
+  ]
+}

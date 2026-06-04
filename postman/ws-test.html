@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Chatflow WebSocket 테스트</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: system-ui, sans-serif; max-width: 720px; margin: 24px auto; padding: 0 16px; }
+    label { display: block; margin-top: 12px; font-weight: 600; }
+    input, textarea, button { width: 100%; margin-top: 4px; padding: 8px; font-size: 14px; }
+    textarea { min-height: 72px; font-family: monospace; }
+    .row { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+    .row button { width: auto; flex: 1; min-width: 100px; }
+    #log { background: #111; color: #0f0; padding: 12px; min-height: 200px; max-height: 400px;
+      overflow-y: auto; font-family: monospace; font-size: 12px; white-space: pre-wrap; margin-top: 16px; }
+    .hint { color: #666; font-size: 13px; margin-top: 8px; }
+    .ok { color: #080; } .err { color: #c00; }
+  </style>
+</head>
+<body>
+  <h1>Chatflow WebSocket 테스트</h1>
+  <p class="hint">Postman JSON은 WebSocket을 GET으로만 불러옵니다. 이 페이지로 바로 테스트하세요.</p>
+
+  <label>WebSocket URL (token 자동 붙임)</label>
+  <input id="baseUrl" value="ws://localhost:8081/ws/chat" />
+
+  <label>accessToken (로그인 응답)</label>
+  <input id="token" placeholder="eyJhbGciOiJIUzI1NiIs..." />
+
+  <label>roomId</label>
+  <input id="roomId" type="number" value="1" />
+
+  <div class="row">
+    <button type="button" id="btnConnect">Connect</button>
+    <button type="button" id="btnDisconnect">Disconnect</button>
+  </div>
+
+  <div class="row">
+    <button type="button" id="btnJoin">JOIN</button>
+    <button type="button" id="btnSend">SEND</button>
+    <button type="button" id="btnLeave">LEAVE</button>
+  </div>
+
+  <label>메시지 내용 (SEND)</label>
+  <input id="content" value="브라우저에서 보낸 메시지" />
+
+  <label>직접 JSON 전송</label>
+  <textarea id="customJson">{"type":"JOIN","roomId":1}</textarea>
+  <button type="button" id="btnCustom">위 JSON Send</button>
+
+  <div id="log"></div>
+
+  <script>
+    let ws = null;
+    const logEl = document.getElementById('log');
+
+    function log(msg, cls) {
+      const line = document.createElement('div');
+      if (cls) line.className = cls;
+      line.textContent = '[' + new Date().toLocaleTimeString() + '] ' + msg;
+      logEl.appendChild(line);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function fullUrl() {
+      const base = document.getElementById('baseUrl').value.trim().replace(/\/$/, '');
+      const token = document.getElementById('token').value.trim();
+      const sep = base.includes('?') ? '&' : '?';
+      return token ? base + sep + 'token=' + encodeURIComponent(token) : base;
+    }
+
+    function sendJson(obj) {
+      if (!ws || ws.readyState !== WebSocket.OPEN) {
+        log('연결되지 않음. Connect 먼저.', 'err');
+        return;
+      }
+      const text = JSON.stringify(obj);
+      ws.send(text);
+      log('→ ' + text);
+    }
+
+    document.getElementById('btnConnect').onclick = function () {
+      if (ws) ws.close();
+      const url = fullUrl();
+      log('연결 시도: ' + url);
+      try {
+        ws = new WebSocket(url);
+        ws.onopen = () => log('연결됨 (OPEN)', 'ok');
+        ws.onmessage = (e) => log('← ' + e.data, 'ok');
+        ws.onerror = () => log('WebSocket error', 'err');
+        ws.onclose = (e) => log('종료 code=' + e.code + ' reason=' + (e.reason || '-'));
+      } catch (e) {
+        log('실패: ' + e.message, 'err');
+      }
+    };
+
+    document.getElementById('btnDisconnect').onclick = function () {
+      if (ws) { ws.close(); ws = null; log('Disconnect 요청'); }
+    };
+
+    document.getElementById('btnJoin').onclick = function () {
+      const roomId = Number(document.getElementById('roomId').value);
+      sendJson({ type: 'JOIN', roomId });
+    };
+
+    document.getElementById('btnSend').onclick = function () {
+      const roomId = Number(document.getElementById('roomId').value);
+      const content = document.getElementById('content').value;
+      sendJson({ type: 'SEND', roomId, content, messageType: 'TEXT' });
+    };
+
+    document.getElementById('btnLeave').onclick = function () {
+      const roomId = Number(document.getElementById('roomId').value);
+      sendJson({ type: 'LEAVE', roomId });
+    };
+
+    document.getElementById('btnCustom').onclick = function () {
+      try {
+        sendJson(JSON.parse(document.getElementById('customJson').value));
+      } catch (e) {
+        log('JSON 파싱 오류: ' + e.message, 'err');
+      }
+    };
+
+    document.getElementById('roomId').onchange = function () {
+      const id = this.value;
+      document.getElementById('customJson').value =
+        '{"type":"JOIN","roomId":' + id + '}';
+    };
+  </script>
+</body>
+</html>

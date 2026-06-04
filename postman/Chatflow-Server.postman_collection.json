@@ -1,0 +1,358 @@
+{
+  "info": {
+    "_postman_id": "chatflow-server-local",
+    "name": "Chatflow Server (로컬 테스트)",
+    "description": "# 로컬 E2E 테스트 (8081)\n\n**사전 조건:** `docker compose up -d` (MySQL + Redis), 앱 실행\n\n## REST (1~3단계)\n1. 회원가입 A → B (또는 로그인만)\n2. 로그인 A → `accessToken`, `userId`\n3. 로그인 B → `accessTokenB`, `targetUserId`\n4. 1:1 방 생성 → `roomId`\n5. 메시지 REST 전송 / 목록\n\n## WebSocket (3단계)\n6. **사용자 A — WebSocket** 연결 → 저장된 메시지 순서: JOIN → SEND\n7. **사용자 B — WebSocket** (새 탭) 연결 → JOIN → A가 보낸 MESSAGE 수신 확인\n8. B에서 SEND 또는 REST 메시지 → A WS에서 MESSAGE 수신\n\n## 변수\n| 변수 | 용도 |\n|------|------|\n| accessToken | 사용자 A JWT |\n| accessTokenB | 사용자 B JWT |\n| roomId | 채팅방 ID |\n| targetUserId | 상대방 userId |\n\nPostman 웹은 Desktop Agent 필요. WS는 데스크톱 앱 권장.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8081" },
+    { "key": "wsBaseUrl", "value": "ws://localhost:8081" },
+    { "key": "accessToken", "value": "" },
+    { "key": "accessTokenB", "value": "" },
+    { "key": "userId", "value": "1" },
+    { "key": "targetUserId", "value": "2" },
+    { "key": "roomId", "value": "1" },
+    { "key": "searchNickname", "value": "사용자B" }
+  ],
+  "item": [
+    {
+      "name": "1. 인증",
+      "description": "회원가입 후 로그인. B 로그인 시 `accessTokenB`에 저장되어 A 토큰과 분리됩니다.",
+      "item": [
+        {
+          "name": "회원가입 — 사용자 A",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user-a@chatflow.test\",\n  \"password\": \"password12\",\n  \"nickname\": \"사용자A\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/signup",
+            "description": "이미 가입된 경우 4xx → **로그인 A**만 실행."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const j = pm.response.json();",
+                  "    if (j.userId) pm.collectionVariables.set('userId', String(j.userId));",
+                  "    pm.test('userId saved', () => pm.expect(j.userId).to.be.a('number'));",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "회원가입 — 사용자 B",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user-b@chatflow.test\",\n  \"password\": \"password12\",\n  \"nickname\": \"사용자B\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/signup"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const j = pm.response.json();",
+                  "    if (j.userId) pm.collectionVariables.set('targetUserId', String(j.userId));",
+                  "    pm.test('targetUserId saved', () => pm.expect(j.userId).to.eql(pm.collectionVariables.get('targetUserId') * 1));",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "로그인 — 사용자 A",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user-a@chatflow.test\",\n  \"password\": \"password12\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/login"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('login OK', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('accessToken exists', () => pm.expect(j.accessToken).to.be.a('string').and.not.empty);",
+                  "pm.collectionVariables.set('accessToken', j.accessToken);",
+                  "pm.collectionVariables.set('userId', String(j.userId));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "로그인 — 사용자 B",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user-b@chatflow.test\",\n  \"password\": \"password12\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/login",
+            "description": "`accessTokenB`에 저장 (A의 accessToken은 유지)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('login OK', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.collectionVariables.set('accessTokenB', j.accessToken);",
+                  "pm.collectionVariables.set('targetUserId', String(j.userId));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. 사용자",
+      "auth": {
+        "type": "bearer",
+        "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+      },
+      "item": [
+        {
+          "name": "내 정보 (GET /me)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/users/me"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('200', () => pm.response.to.have.status(200));"],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "사용자 조회 (targetUserId)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/users/{{targetUserId}}"
+          }
+        },
+        {
+          "name": "닉네임 검색 (사용자B)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/users/search?nickname={{searchNickname}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "search"],
+              "query": [{ "key": "nickname", "value": "{{searchNickname}}" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. 채팅 REST",
+      "auth": {
+        "type": "bearer",
+        "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+      },
+      "description": "Bearer는 사용자 A 토큰. B로내려면 Authorization을 accessTokenB로 바꾸세요.",
+      "item": [
+        {
+          "name": "1:1 채팅방 생성 (DIRECT)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"DIRECT\",\n  \"targetUserId\": {{targetUserId}}\n}"
+            },
+            "url": "{{baseUrl}}/api/chat/rooms"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('room created', () => pm.response.to.have.status(201));",
+                  "const j = pm.response.json();",
+                  "pm.collectionVariables.set('roomId', String(j.roomId));",
+                  "pm.test('roomId saved', () => pm.expect(pm.collectionVariables.get('roomId')).to.eql(String(j.roomId)));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "그룹 채팅방 생성 (GROUP)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"GROUP\",\n  \"roomName\": \"팀 채팅\",\n  \"memberUserIds\": [{{targetUserId}}]\n}"
+            },
+            "url": "{{baseUrl}}/api/chat/rooms"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    pm.collectionVariables.set('roomId', String(pm.response.json().roomId));",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "내 채팅방 목록",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/chat/rooms"
+          }
+        },
+        {
+          "name": "채팅방 상세",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/chat/rooms/{{roomId}}"
+          }
+        },
+        {
+          "name": "메시지 전송 (REST)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"REST 메시지 — Postman 테스트\",\n  \"messageType\": \"TEXT\"\n}"
+            },
+            "url": "{{baseUrl}}/api/chat/rooms/{{roomId}}/messages",
+            "description": "전송 후 WebSocket( JOIN 된 상태)에서 MESSAGE 수신 확인."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('message created', () => pm.response.to.have.status(201));",
+                  "const j = pm.response.json();",
+                  "pm.test('has messageId', () => pm.expect(j.messageId).to.be.a('number'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "메시지 전송 (REST) — 사용자 B",
+          "auth": {
+            "type": "bearer",
+            "bearer": [{ "key": "token", "value": "{{accessTokenB}}", "type": "string" }]
+          },
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"B가 보낸 REST 메시지\",\n  \"messageType\": \"TEXT\"\n}"
+            },
+            "url": "{{baseUrl}}/api/chat/rooms/{{roomId}}/messages"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('201', () => pm.response.to.have.status(201));"],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "메시지 목록 (최신순)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/rooms/{{roomId}}/messages?page=0&size=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chat", "rooms", "{{roomId}}", "messages"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "50" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. WebSocket (안내)",
+      "description": "Postman JSON Import는 ws:// 가 GET으로만 열립니다.\n\n✅ postman/ws-test.html (브라우저)\n✅ Postman: New → WebSocket\n\nREADME: postman/README-WebSocket.md",
+      "item": [
+        {
+          "name": "📖 WebSocket — ws-test.html 사용",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/users/me",
+            "description": "WebSocket 테스트:\n\n1. 로그인 A/B (이 컬렉션)\n2. 1:1 방 생성 → roomId\n3. 탐색기에서 postman/ws-test.html 열기\n4. token, roomId 입력 → Connect → JOIN → SEND\n\nPostman WS: New → WebSocket (HTTP 아님)\nws://localhost:8081/ws/chat?token={{accessToken}}"
+          },
+          "auth": {
+            "type": "bearer",
+            "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. 시나리오 체크리스트",
+      "description": "수동 체크용 (요청 없음). Postman Tests Runner로 1→3 REST 후 4 WS 진행.",
+      "item": [
+        {
+          "name": "README — 테스트 순서",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/users/me",
+            "description": "이 항목은 안내용입니다.\n\n✅ 1. 로그인 A, B\n✅ 2. 1:1 방 생성 (roomId)\n✅ 3. WS: A JOIN → B JOIN (새 탭)\n✅ 4. A WS SEND → B에서 MESSAGE\n✅ 5. REST 메시지 (A) → B WS MESSAGE\n✅ 6. 메시지 목록 REST\n\n문서: postman/README.md, docs/WEBSOCKET.md"
+          },
+          "auth": {
+            "type": "bearer",
+            "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+          }
+        }
+      ]
+    }
+  ]
+}

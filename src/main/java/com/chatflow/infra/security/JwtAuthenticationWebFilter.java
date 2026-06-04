@@ -12,9 +12,11 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
+import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
@@ -33,6 +35,9 @@ public class JwtAuthenticationWebFilter implements WebFilter {
         }
 
         String path = exchange.getRequest().getURI().getPath();
+        if (path.startsWith("/ws/")) {
+            return authenticateWebSocketUpgrade(exchange, chain);
+        }
         if (isPublic(path)) {
             return chain.filter(exchange);
         }
@@ -44,14 +49,7 @@ public class JwtAuthenticationWebFilter implements WebFilter {
 
         String token = header.substring(7);
         try {
-            var claims = jwtService.parse(token);
-            long userId = Long.parseLong(claims.getSubject());
-            String email = claims.get("email", String.class);
-            String nickname = claims.get("nickname", String.class);
-            if (nickname == null) {
-                nickname = claims.get("username", String.class);
-            }
-            var principal = new AuthPrincipal(userId, email, nickname);
+            var principal = jwtService.parsePrincipal(token);
             var auth = new UsernamePasswordAuthenticationToken(
                     principal,
                     null,
@@ -62,6 +60,41 @@ public class JwtAuthenticationWebFilter implements WebFilter {
         } catch (JwtException | IllegalArgumentException ex) {
             return unauthorized(exchange.getResponse());
         }
+    }
+
+    private Mono<Void> authenticateWebSocketUpgrade(ServerWebExchange exchange, WebFilterChain chain) {
+        String token = resolveTokenFromQueryOrBearer(exchange);
+        if (!StringUtils.hasText(token)) {
+            return unauthorized(exchange.getResponse());
+        }
+        try {
+            var principal = jwtService.parsePrincipal(token);
+            var auth = new UsernamePasswordAuthenticationToken(
+                    principal,
+                    null,
+                    List.of(new SimpleGrantedAuthority("ROLE_USER")));
+            return chain.filter(exchange)
+                    .contextWrite(ReactiveSecurityContextHolder.withAuthentication(auth));
+        } catch (JwtException | IllegalArgumentException ex) {
+            return unauthorized(exchange.getResponse());
+        }
+    }
+
+    private static String resolveTokenFromQueryOrBearer(ServerWebExchange exchange) {
+        var query = UriComponentsBuilder.fromUri(exchange.getRequest().getURI()).build().getQueryParams();
+        String token = query.getFirst("token");
+        if (StringUtils.hasText(token)) {
+            return token;
+        }
+        token = query.getFirst("access_token");
+        if (StringUtils.hasText(token)) {
+            return token;
+        }
+        String header = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
+        if (header != null && header.startsWith("Bearer ")) {
+            return header.substring(7);
+        }
+        return null;
     }
 
     private static boolean isPublic(String path) {

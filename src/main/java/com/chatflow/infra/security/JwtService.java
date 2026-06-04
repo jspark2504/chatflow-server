@@ -38,6 +38,17 @@ public class JwtService {
                 .getPayload();
     }
 
+    public AuthPrincipal parsePrincipal(String token) {
+        Claims claims = parse(token);
+        long userId = Long.parseLong(claims.getSubject());
+        String email = claims.get("email", String.class);
+        String nickname = claims.get("nickname", String.class);
+        if (nickname == null) {
+            nickname = claims.get("username", String.class);
+        }
+        return new AuthPrincipal(userId, email, nickname);
+    }
+
     private SecretKey signingKey() {
         byte[] keyBytes = properties.getSecret().getBytes(StandardCharsets.UTF_8);
         return Keys.hmacShaKeyFor(keyBytes);
