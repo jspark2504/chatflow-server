@@ -14,7 +14,7 @@ Spring Boot, Spring WebFlux, WebSocket, Redis, MySQL, Docker, GitHub Actions, AW
 
 | 단계 | 허용 | 금지 (다음 단계까지) |
 |------|------|----------------------|
-| 1 | JWT, 회원 API, Security WebFlux, MySQL | WebSocket, Redis Pub/Sub, Kafka, AWS 배포 |
+| 1 | `/api/auth/signup|login`, JWT, users(email,nickname), MySQL | WebSocket, Redis, Kafka |
 | 2 | 채팅방·멤버·메시지 도메인, REST | WebSocket 실시간 전송 |
 | 3+ | WebSocket, Redis Pub/Sub | Kafka는 7단계 |
 

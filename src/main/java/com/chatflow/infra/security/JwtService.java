@@ -16,12 +16,13 @@ public class JwtService {
 
     private final JwtProperties properties;
 
-    public String createToken(long userId, String username) {
+    public String createToken(long userId, String email, String nickname) {
         Date now = new Date();
         Date exp = new Date(now.getTime() + properties.getExpirationMs());
         return Jwts.builder()
                 .subject(String.valueOf(userId))
-                .claim("username", username)
+                .claim("email", email)
+                .claim("nickname", nickname)
                 .issuedAt(now)
                 .expiration(exp)
                 .signWith(signingKey())

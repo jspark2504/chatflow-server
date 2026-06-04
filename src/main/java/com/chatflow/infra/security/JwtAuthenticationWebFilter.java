@@ -46,8 +46,9 @@ public class JwtAuthenticationWebFilter implements WebFilter {
         try {
             var claims = jwtService.parse(token);
             long userId = Long.parseLong(claims.getSubject());
-            String username = claims.get("username", String.class);
-            var principal = new AuthPrincipal(userId, username);
+            String email = claims.get("email", String.class);
+            String nickname = claims.get("nickname", String.class);
+            var principal = new AuthPrincipal(userId, email, nickname);
             var auth = new UsernamePasswordAuthenticationToken(
                     principal,
                     null,
@@ -61,8 +62,8 @@ public class JwtAuthenticationWebFilter implements WebFilter {
     }
 
     private static boolean isPublic(String path) {
-        return path.startsWith("/api/users/register")
-                || path.startsWith("/api/users/login");
+        return path.startsWith("/api/auth/signup")
+                || path.startsWith("/api/auth/login");
     }
 
     private static Mono<Void> unauthorized(ServerHttpResponse response) {

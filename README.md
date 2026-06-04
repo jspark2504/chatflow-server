@@ -50,36 +50,49 @@ mvn spring-boot:run
 
 기본 포트: **8081** (`chat-service-server`와 8080 충돌 방지)
 
-## API (1단계)
+## API (1단계 · 기획문서 반영)
 
 | Method | Path | 인증 |
 |--------|------|------|
-| POST | `/api/users/register` | 없음 |
-| POST | `/api/users/login` | 없음 |
-| GET | `/api/users/me` | `Authorization: Bearer {token}` |
+| POST | `/api/auth/signup` | 없음 |
+| POST | `/api/auth/login` | 없음 |
+| GET | `/api/users/me` | Bearer JWT |
+| GET | `/api/users/{userId}` | Bearer JWT |
+| GET | `/api/users/search?nickname=` | Bearer JWT |
+
+회원 필드: `email`, `password`, `nickname` (기획문서 DB/API 명세)
 
 ### 예시
 
 ```bash
-curl -s -X POST http://localhost:8081/api/users/register \
+curl -s -X POST http://localhost:8081/api/auth/signup \
   -H "Content-Type: application/json" \
-  -d "{\"username\":\"alice\",\"password\":\"password1\"}"
+  -d "{\"email\":\"test@test.com\",\"password\":\"password1\",\"nickname\":\"홍길동\"}"
 
-curl -s -X POST http://localhost:8081/api/users/login \
+curl -s -X POST http://localhost:8081/api/auth/login \
   -H "Content-Type: application/json" \
-  -d "{\"username\":\"alice\",\"password\":\"password1\"}"
+  -d "{\"email\":\"test@test.com\",\"password\":\"password1\"}"
 
 curl -s http://localhost:8081/api/users/me \
-  -H "Authorization: Bearer YOUR_TOKEN"
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
 ```
+
+## DB (기획문서 테이블정의서)
+
+Flyway `V2__planning_schema.sql` 적용 시 생성:
+
+- `users`, `chat_room`, `chat_room_member`, `chat_message`, `notification`, `user_connection`
+
+2단계 이전 테이블은 DB만 준비, API는 이후 단계에서 구현.
 
 ## 패키지 구조
 
 ```
 com.chatflow/
-  common/error/     # 전역 예외
-  user/             # 회원 API
-  infra/security/   # JWT 필터, Security
+  common/error/
+  user/controller/  # AuthController, UserController
+  user/service/
+  infra/security/
 ```
 
 ## 인증 설계 (면접용 한 줄)

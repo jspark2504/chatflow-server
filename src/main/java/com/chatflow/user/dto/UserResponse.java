@@ -1,4 +1,4 @@
 package com.chatflow.user.dto;
 
-public record UserResponse(long id, String username) {
+public record UserResponse(long userId, String email, String nickname) {
 }

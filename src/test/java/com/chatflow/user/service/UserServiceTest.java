@@ -35,10 +35,11 @@ class UserServiceTest {
     UserService userService;
 
     @Test
-    void register_rejectsDuplicateUsername() {
-        when(userRepository.existsByUsername("alice")).thenReturn(Mono.just(true));
+    void register_rejectsDuplicateEmail() {
+        when(userRepository.existsByEmail("test@test.com")).thenReturn(Mono.just(true));
 
-        StepVerifier.create(userService.register(new RegisterRequest("alice", "password1")))
+        StepVerifier.create(userService.register(
+                        new RegisterRequest("test@test.com", "password1", "홍길동")))
                 .expectErrorSatisfies(err -> {
                     assertThat(err).isInstanceOf(BusinessException.class);
                     assertThat(((BusinessException) err).getStatus()).isEqualTo(HttpStatus.CONFLICT);
@@ -48,22 +49,28 @@ class UserServiceTest {
 
     @Test
     void login_returnsTokenWhenCredentialsMatch() {
-        User user = User.builder().id(1L).username("alice").password("hash").build();
-        when(userRepository.findByUsername("alice")).thenReturn(Mono.just(user));
+        User user = User.builder()
+                .id(1L)
+                .email("test@test.com")
+                .nickname("홍길동")
+                .password("hash")
+                .build();
+        when(userRepository.findByEmail("test@test.com")).thenReturn(Mono.just(user));
         when(passwordEncoder.matches("password1", "hash")).thenReturn(true);
-        when(jwtService.createToken(1L, "alice")).thenReturn("jwt-token");
+        when(jwtService.createToken(1L, "test@test.com", "홍길동")).thenReturn("jwt-token");
 
-        StepVerifier.create(userService.login(new LoginRequest("alice", "password1")))
+        StepVerifier.create(userService.login(new LoginRequest("test@test.com", "password1")))
                 .assertNext(res -> {
-                    assertThat(res.token()).isEqualTo("jwt-token");
+                    assertThat(res.accessToken()).isEqualTo("jwt-token");
                     assertThat(res.userId()).isEqualTo(1L);
+                    assertThat(res.nickname()).isEqualTo("홍길동");
                 })
                 .verifyComplete();
     }
 
     @Test
     void register_savesEncodedPassword() {
-        when(userRepository.existsByUsername("bob")).thenReturn(Mono.just(false));
+        when(userRepository.existsByEmail("bob@test.com")).thenReturn(Mono.just(false));
         when(passwordEncoder.encode(anyString())).thenReturn("encoded");
         when(userRepository.save(any(User.class))).thenAnswer(inv -> {
             User u = inv.getArgument(0);
@@ -71,10 +78,12 @@ class UserServiceTest {
             return Mono.just(u);
         });
 
-        StepVerifier.create(userService.register(new RegisterRequest("bob", "password1")))
+        StepVerifier.create(userService.register(
+                        new RegisterRequest("bob@test.com", "password1", "bob")))
                 .assertNext(res -> {
-                    assertThat(res.id()).isEqualTo(2L);
-                    assertThat(res.username()).isEqualTo("bob");
+                    assertThat(res.userId()).isEqualTo(2L);
+                    assertThat(res.email()).isEqualTo("bob@test.com");
+                    assertThat(res.nickname()).isEqualTo("bob");
                 })
                 .verifyComplete();
     }
