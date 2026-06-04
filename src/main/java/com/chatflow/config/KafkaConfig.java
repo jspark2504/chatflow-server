@@ -1,9 +1,7 @@
 package com.chatflow.config;
 
 import com.chatflow.kafka.dto.ChatMessageSentEvent;
-import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
-import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.springframework.boot.autoconfigure.kafka.KafkaProperties;
 import org.springframework.context.annotation.Bean;
@@ -43,12 +41,10 @@ public class KafkaConfig {
     @Bean
     public ConsumerFactory<String, ChatMessageSentEvent> chatMessageConsumerFactory(KafkaProperties kafkaProperties) {
         Map<String, Object> props = new HashMap<>(kafkaProperties.buildConsumerProperties(null));
-        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
-        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer.class);
-        JsonDeserializer<ChatMessageSentEvent> deserializer = new JsonDeserializer<>(ChatMessageSentEvent.class);
-        deserializer.addTrustedPackages("com.chatflow.kafka.dto");
-        deserializer.ignoreTypeHeaders();
-        return new DefaultKafkaConsumerFactory<>(props, new StringDeserializer(), deserializer);
+        props.put(JsonDeserializer.TRUSTED_PACKAGES, "com.chatflow.kafka.dto");
+        props.put(JsonDeserializer.VALUE_DEFAULT_TYPE, ChatMessageSentEvent.class.getName());
+        props.put(JsonDeserializer.USE_TYPE_INFO_HEADERS, false);
+        return new DefaultKafkaConsumerFactory<>(props);
     }
 
     @Bean

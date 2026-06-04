@@ -21,9 +21,6 @@ spring:
       auto-offset-reset: earliest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
-      properties:
-        spring.json.trusted.packages: com.chatflow.kafka.dto
-        spring.json.value.default.type: com.chatflow.kafka.dto.ChatMessageSentEvent
   flyway:
     enabled: true
     url: jdbc:mysql://localhost:3306/chatflow?sslMode=DISABLED&allowPublicKeyRetrieval=true&useUnicode=true&characterEncoding=UTF-8&connectionCollation=utf8mb4_unicode_ci
