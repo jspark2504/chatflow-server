@@ -22,10 +22,13 @@ public class JwtReactiveAuthenticationManager implements ReactiveAuthenticationM
     public Mono<Authentication> authenticate(Authentication authentication) {
         String token = authentication.getCredentials().toString();
         return jwtService.authenticateToken(token)
-                .map(principal -> new UsernamePasswordAuthenticationToken(
-                        principal,
-                        token,
-                        List.of(new SimpleGrantedAuthority("ROLE_USER"))))
+                .flatMap(principal -> {
+                    Authentication authenticated = new UsernamePasswordAuthenticationToken(
+                            principal,
+                            token,
+                            List.of(new SimpleGrantedAuthority("ROLE_USER")));
+                    return Mono.just(authenticated);
+                })
                 .switchIfEmpty(Mono.error(new BadCredentialsException("Invalid token")))
                 .onErrorMap(JwtException.class, ex -> new BadCredentialsException("Invalid token", ex));
     }
