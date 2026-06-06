@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.bind.support.WebExchangeBindException;
 import org.springframework.web.server.ServerWebExchange;
+import org.springframework.web.server.ServerWebInputException;
 import reactor.core.publisher.Mono;
 
 import java.time.Instant;
@@ -18,6 +19,14 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BusinessException.class)
     public Mono<ResponseEntity<ApiError>> handleBusiness(BusinessException ex, ServerWebExchange exchange) {
         return Mono.just(ResponseEntity.status(ex.getStatus()).body(toError(exchange, ex.getStatus(), ex.getMessage())));
+    }
+
+    @ExceptionHandler(ServerWebInputException.class)
+    public Mono<ResponseEntity<ApiError>> handleBadInput(ServerWebInputException ex, ServerWebExchange exchange) {
+        log.warn("Bad request body on {} {}: {}", exchange.getRequest().getMethod(),
+                exchange.getRequest().getPath(), ex.getMostSpecificCause().getMessage());
+        return Mono.just(ResponseEntity.badRequest()
+                .body(toError(exchange, HttpStatus.BAD_REQUEST, "Invalid JSON body")));
     }
 
     @ExceptionHandler(WebExchangeBindException.class)
