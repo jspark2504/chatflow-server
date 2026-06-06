@@ -8,6 +8,7 @@ import com.chatflow.user.dto.UserResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -31,5 +32,15 @@ public class AuthController {
     @PostMapping("/login")
     public Mono<LoginResponse> login(@Valid @RequestBody Mono<LoginRequest> body) {
         return body.flatMap(authService::login);
+    }
+
+    @PostMapping("/logout")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public Mono<Void> logout() {
+        return ReactiveSecurityContextHolder.getContext()
+                .map(ctx -> ctx.getAuthentication())
+                .filter(auth -> auth != null && auth.isAuthenticated())
+                .map(auth -> auth.getCredentials().toString())
+                .flatMap(authService::logout);
     }
 }

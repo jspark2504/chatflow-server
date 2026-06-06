@@ -12,7 +12,6 @@ import com.chatflow.websocket.dto.WsClientMessage;
 import com.chatflow.websocket.dto.WsClientMessageType;
 import com.chatflow.websocket.dto.WsServerMessage;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -33,13 +32,13 @@ public class ChatWebSocketHandler implements WebSocketHandler {
 
     @Override
     public Mono<Void> handle(WebSocketSession session) {
-        AuthPrincipal principal = authenticate(session);
-        if (principal == null) {
-            return sendError(session, "Invalid or missing token")
-                    .then(session.close());
-        }
+        return authenticate(session)
+                .flatMap(principal -> handleSession(session, principal.userId()))
+                .onErrorResume(ex -> sendError(session, "Invalid or missing token").then(session.close()))
+                .switchIfEmpty(sendError(session, "Invalid or missing token").then(session.close()));
+    }
 
-        long userId = principal.userId();
+    private Mono<Void> handleSession(WebSocketSession session, long userId) {
         return session.receive()
                 .map(msg -> msg.getPayloadAsText())
                 .concatMap(text -> handleInbound(session, userId, text)
@@ -48,6 +47,10 @@ public class ChatWebSocketHandler implements WebSocketHandler {
                         .onErrorResume(ex -> sendError(session, "Request failed")))
                 .doFinally(signal -> sessionRegistry.removeSession(session))
                 .then();
+    }
+
+    private Mono<AuthPrincipal> authenticate(WebSocketSession session) {
+        return jwtService.authenticateToken(resolveToken(session));
     }
 
     private Mono<Void> handleInbound(WebSocketSession session, long userId, String text) {
@@ -111,18 +114,6 @@ public class ChatWebSocketHandler implements WebSocketHandler {
     private Mono<Void> send(WebSocketSession session, WsServerMessage payload) {
         return Mono.fromCallable(() -> objectMapper.writeValueAsString(payload))
                 .flatMap(json -> session.send(Mono.just(session.textMessage(json))));
-    }
-
-    private AuthPrincipal authenticate(WebSocketSession session) {
-        String token = resolveToken(session);
-        if (!StringUtils.hasText(token)) {
-            return null;
-        }
-        try {
-            return jwtService.parsePrincipal(token);
-        } catch (JwtException | IllegalArgumentException ex) {
-            return null;
-        }
     }
 
     private static String resolveToken(WebSocketSession session) {

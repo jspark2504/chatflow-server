@@ -31,7 +31,8 @@ public class SecurityConfig {
         jwtFilter.setServerAuthenticationConverter(authenticationConverter);
         jwtFilter.setRequiresAuthenticationMatcher(new AndServerWebExchangeMatcher(
                 ServerWebExchangeMatchers.pathMatchers("/api/**"),
-                new NegatedServerWebExchangeMatcher(ServerWebExchangeMatchers.pathMatchers("/api/auth/**"))));
+                new NegatedServerWebExchangeMatcher(ServerWebExchangeMatchers.pathMatchers(
+                        "/api/auth/signup", "/api/auth/login"))));
         jwtFilter.setAuthenticationFailureHandler((webFilterExchange, ex) -> {
             webFilterExchange.getExchange().getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
             return webFilterExchange.getExchange().getResponse().setComplete();

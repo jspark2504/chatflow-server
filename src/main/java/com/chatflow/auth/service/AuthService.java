@@ -66,6 +66,10 @@ public class AuthService {
                         jwtService.createToken(u.getId(), u.getEmail(), u.getNickname())));
     }
 
+    public Mono<Void> logout(String accessToken) {
+        return jwtService.revokeToken(accessToken);
+    }
+
     private UserResponse toUserResponse(User user) {
         if (user.getId() == null) {
             throw new BusinessException(HttpStatus.INTERNAL_SERVER_ERROR, "User id missing after save");
