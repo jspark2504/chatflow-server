@@ -2,10 +2,12 @@ package com.chatflow.websocket;
 
 import com.chatflow.chat.dto.SendMessageRequest;
 import com.chatflow.chat.service.ChatMessageService;
+import com.chatflow.chat.service.ChatReadService;
 import com.chatflow.chat.service.ChatRoomService;
 import com.chatflow.common.error.BusinessException;
 import com.chatflow.infra.security.AuthPrincipal;
 import com.chatflow.infra.security.JwtService;
+import com.chatflow.infra.security.JwtTokenResolver;
 import com.chatflow.websocket.dto.WsClientMessage;
 import com.chatflow.websocket.dto.WsClientMessageType;
 import com.chatflow.websocket.dto.WsServerMessage;
@@ -16,7 +18,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.socket.WebSocketHandler;
 import org.springframework.web.reactive.socket.WebSocketSession;
-import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
 
 @Component
@@ -26,6 +27,7 @@ public class ChatWebSocketHandler implements WebSocketHandler {
     private final JwtService jwtService;
     private final ChatRoomService chatRoomService;
     private final ChatMessageService chatMessageService;
+    private final ChatReadService chatReadService;
     private final ChatSessionRegistry sessionRegistry;
     private final ObjectMapper objectMapper;
 
@@ -74,6 +76,7 @@ public class ChatWebSocketHandler implements WebSocketHandler {
         }
         return chatRoomService.requireMember(roomId, userId)
                 .then(Mono.fromRunnable(() -> sessionRegistry.join(roomId, session)))
+                .then(chatReadService.markReadToLatest(roomId, userId))
                 .then(send(session, WsServerMessage.joined(roomId)));
     }
 
@@ -123,19 +126,6 @@ public class ChatWebSocketHandler implements WebSocketHandler {
     }
 
     private static String resolveToken(WebSocketSession session) {
-        var query = UriComponentsBuilder.fromUri(session.getHandshakeInfo().getUri()).build().getQueryParams();
-        String token = query.getFirst("token");
-        if (StringUtils.hasText(token)) {
-            return token;
-        }
-        token = query.getFirst("access_token");
-        if (StringUtils.hasText(token)) {
-            return token;
-        }
-        String auth = session.getHandshakeInfo().getHeaders().getFirst("Authorization");
-        if (auth != null && auth.startsWith("Bearer ")) {
-            return auth.substring(7);
-        }
-        return null;
+        return JwtTokenResolver.resolveFromWebSocketSession(session);
     }
 }

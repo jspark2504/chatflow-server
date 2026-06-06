@@ -28,4 +28,7 @@ public class ChatRoomMember {
 
     @Column("joined_at")
     private Instant joinedAt;
+
+    @Column("last_read_message_id")
+    private Long lastReadMessageId;
 }

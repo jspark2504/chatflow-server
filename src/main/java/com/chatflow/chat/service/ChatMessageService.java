@@ -1,6 +1,7 @@
 package com.chatflow.chat.service;
 
 import com.chatflow.chat.domain.ChatMessage;
+import com.chatflow.chat.dto.MessagePageResponse;
 import com.chatflow.chat.dto.MessageResponse;
 import com.chatflow.chat.dto.SendMessageRequest;
 import com.chatflow.chat.repository.ChatMessageRepository;
@@ -14,6 +15,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.Instant;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -51,13 +53,25 @@ public class ChatMessageService {
                 });
     }
 
-    public Flux<MessageResponse> listMessages(long roomId, long userId, int page, int size) {
+    public Mono<MessagePageResponse> listMessages(long roomId, long userId, Long beforeMessageId, int size) {
         int safeSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
-        int safePage = Math.max(page, 0);
-        long offset = (long) safePage * safeSize;
+        int fetchSize = safeSize + 1;
+        Flux<ChatMessage> messages = beforeMessageId == null
+                ? chatMessageRepository.findLatestByRoomId(roomId, fetchSize)
+                : chatMessageRepository.findByRoomIdBeforeMessageId(roomId, beforeMessageId, fetchSize);
+
         return chatRoomService.requireMember(roomId, userId)
-                .thenMany(chatMessageRepository.findByRoomIdRecent(roomId, safeSize, offset))
-                .map(this::toResponse);
+                .thenMany(messages)
+                .map(this::toResponse)
+                .collectList()
+                .map(items -> toPage(items, safeSize));
+    }
+
+    private MessagePageResponse toPage(List<MessageResponse> items, int pageSize) {
+        boolean hasMore = items.size() > pageSize;
+        List<MessageResponse> page = hasMore ? items.subList(0, pageSize) : items;
+        Long nextCursor = page.isEmpty() ? null : page.get(page.size() - 1).messageId();
+        return new MessagePageResponse(page, hasMore, nextCursor);
     }
 
     private MessageResponse toResponse(ChatMessage message) {

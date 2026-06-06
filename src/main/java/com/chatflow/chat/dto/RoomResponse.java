@@ -10,6 +10,8 @@ public record RoomResponse(
         String roomName,
         RoomType type,
         int memberCount,
+        long unreadCount,
+        Long lastReadMessageId,
         Instant createdAt,
         List<RoomMemberResponse> members
 ) {

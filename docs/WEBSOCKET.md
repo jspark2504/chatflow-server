@@ -2,18 +2,33 @@
 
 ## 연결
 
+### 권장 (브라우저)
+
 ```
-ws://localhost:8081/ws/chat?token={accessToken}
+ws://localhost:8081/ws/chat
+Sec-WebSocket-Protocol: access_token.{accessToken}
 ```
 
-- `token` 또는 `access_token` 쿼리, 또는 핸드셰이크 `Authorization: Bearer` 지원
+JavaScript:
+
+```javascript
+const token = loginResponse.accessToken;
+const ws = new WebSocket("ws://localhost:8081/ws/chat", [`access_token.${token}`]);
+```
+
 - 로그인(`POST /api/auth/login`) 응답의 `accessToken` 사용
+- queryString(`?token=`)은 **deprecated** — 로컬 테스트·Postman 호환용으로만 유지
+
+### 비브라우저 클라이언트
+
+- 핸드셰이크 `Authorization: Bearer {accessToken}` 지원
+- `?token=` / `?access_token=` 쿼리도 지원 (레거시)
 
 ## 클라이언트 → 서버
 
 | type | 필수 필드 | 설명 |
 |------|-----------|------|
-| `JOIN` | `roomId` | 방 구독 (멤버만 가능) |
+| `JOIN` | `roomId` | 방 구독 (멤버만 가능, 입장 시 최신까지 읽음 처리) |
 | `SEND` | `roomId`, `content` | 메시지 저장 + Redis Pub/Sub |
 | `LEAVE` | `roomId` | 구독 해제 |
 

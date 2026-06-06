@@ -80,7 +80,8 @@ mvn spring-boot:run
 | GET | `/api/chat/rooms` | 내 방 목록 |
 | GET | `/api/chat/rooms/{roomId}` | 방 상세 |
 | POST | `/api/chat/rooms/{roomId}/messages` | 메시지 전송 |
-| GET | `/api/chat/rooms/{roomId}/messages?page=0&size=50` | 메시지 목록 (최신순) |
+| GET | `/api/chat/rooms/{roomId}/messages?size=50&beforeMessageId=` | 메시지 목록 (cursor, 최신순) |
+| PUT | `/api/chat/rooms/{roomId}/read` | 읽음 처리 `{ "lastReadMessageId": 123 }` |
 
 **1:1 방 생성 Body:**
 ```json

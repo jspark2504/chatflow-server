@@ -12,6 +12,8 @@ public interface ChatRoomMemberRepository extends ReactiveCrudRepository<ChatRoo
 
     Mono<Boolean> existsByRoomIdAndUserId(long roomId, long userId);
 
+    Mono<ChatRoomMember> findByRoomIdAndUserId(long roomId, long userId);
+
     @Query("SELECT COUNT(*) FROM chat_room_member WHERE room_id = :roomId")
     Mono<Long> countByRoomId(long roomId);
 }

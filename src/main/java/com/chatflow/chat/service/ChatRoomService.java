@@ -30,6 +30,7 @@ public class ChatRoomService {
     private final ChatRoomRepository chatRoomRepository;
     private final ChatRoomMemberRepository chatRoomMemberRepository;
     private final UserRepository userRepository;
+    private final ChatReadService chatReadService;
 
     public Mono<RoomResponse> createRoom(long requesterId, CreateRoomRequest request) {
         return switch (request.type()) {
@@ -40,14 +41,14 @@ public class ChatRoomService {
 
     public Flux<RoomResponse> listMyRooms(long userId) {
         return chatRoomRepository.findAllByMemberUserId(userId)
-                .flatMap(room -> buildRoomResponse(room));
+                .flatMap(room -> buildRoomResponse(room, userId));
     }
 
     public Mono<RoomResponse> getRoom(long roomId, long userId) {
         return requireMember(roomId, userId)
                 .then(chatRoomRepository.findById(roomId))
                 .switchIfEmpty(Mono.error(new BusinessException(HttpStatus.NOT_FOUND, "Chat room not found")))
-                .flatMap(this::buildRoomResponse);
+                .flatMap(room -> buildRoomResponse(room, userId));
     }
 
     public Mono<Void> requireMember(long roomId, long userId) {
@@ -77,7 +78,7 @@ public class ChatRoomService {
                                     .flatMap(room -> addMembers(room.getId(), List.of(requesterId, targetUserId))
                                             .thenReturn(room)));
                         }))))
-                .flatMap(this::buildRoomResponse);
+                .flatMap(room -> buildRoomResponse(room, requesterId));
     }
 
     private Mono<RoomResponse> createGroupRoom(long requesterId, String roomName, List<Long> memberUserIds) {
@@ -98,7 +99,7 @@ public class ChatRoomService {
                                 .createdAt(Instant.now())
                                 .build())
                         .flatMap(room -> addMembers(room.getId(), new ArrayList<>(memberIds)).thenReturn(room))))
-                .flatMap(this::buildRoomResponse);
+                .flatMap(room -> buildRoomResponse(room, requesterId));
     }
 
     private Mono<Void> validateUsersExist(Set<Long> userIds) {
@@ -127,26 +128,32 @@ public class ChatRoomService {
                 .map(names -> String.join(" · ", names));
     }
 
-    private Mono<RoomResponse> buildRoomResponse(ChatRoom room) {
+    private Mono<RoomResponse> buildRoomResponse(ChatRoom room, long viewerUserId) {
         if (room.getId() == null) {
             return Mono.error(new BusinessException(HttpStatus.INTERNAL_SERVER_ERROR, "Room id missing"));
         }
-        return chatRoomMemberRepository.findByRoomId(room.getId())
+        long roomId = room.getId();
+        Mono<ChatRoomMember> membership = chatRoomMemberRepository.findByRoomIdAndUserId(roomId, viewerUserId);
+        return membership.flatMap(member -> chatRoomMemberRepository.findByRoomId(roomId)
                 .flatMap(m -> userRepository.findById(m.getUserId())
                         .map(u -> new RoomMemberResponse(u.getId(), u.getNickname())))
                 .collectList()
-                .zipWith(chatRoomMemberRepository.countByRoomId(room.getId()))
+                .zipWith(chatRoomMemberRepository.countByRoomId(roomId))
+                .zipWith(chatReadService.countUnread(roomId, viewerUserId, member.getLastReadMessageId()))
                 .map(tuple -> {
-                    List<RoomMemberResponse> members = tuple.getT1();
-                    int count = tuple.getT2().intValue();
+                    List<RoomMemberResponse> members = tuple.getT1().getT1();
+                    int count = tuple.getT1().getT2().intValue();
+                    long unreadCount = tuple.getT2();
                     RoomType type = count == 2 ? RoomType.DIRECT : RoomType.GROUP;
                     return new RoomResponse(
-                            room.getId(),
+                            roomId,
                             room.getRoomName(),
                             type,
                             count,
+                            unreadCount,
+                            member.getLastReadMessageId(),
                             room.getCreatedAt(),
                             members);
-                });
+                }));
     }
 }

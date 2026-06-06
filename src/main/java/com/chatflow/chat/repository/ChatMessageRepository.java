@@ -10,8 +10,30 @@ public interface ChatMessageRepository extends ReactiveCrudRepository<ChatMessag
     @Query("""
             SELECT * FROM chat_message
             WHERE room_id = :roomId
-            ORDER BY created_at DESC
-            LIMIT :limit OFFSET :offset
+            ORDER BY id DESC
+            LIMIT :limit
             """)
-    Flux<ChatMessage> findByRoomIdRecent(long roomId, int limit, long offset);
+    Flux<ChatMessage> findLatestByRoomId(long roomId, int limit);
+
+    @Query("""
+            SELECT * FROM chat_message
+            WHERE room_id = :roomId AND id < :beforeMessageId
+            ORDER BY id DESC
+            LIMIT :limit
+            """)
+    Flux<ChatMessage> findByRoomIdBeforeMessageId(long roomId, long beforeMessageId, int limit);
+
+    @Query("""
+            SELECT COUNT(*) FROM chat_message
+            WHERE room_id = :roomId
+              AND id > COALESCE(:lastReadMessageId, 0)
+              AND sender_id <> :userId
+            """)
+    Mono<Long> countUnread(long roomId, long userId, Long lastReadMessageId);
+
+    @Query("""
+            SELECT COALESCE(MAX(id), 0) FROM chat_message
+            WHERE room_id = :roomId
+            """)
+    Mono<Long> findMaxMessageIdByRoomId(long roomId);
 }
