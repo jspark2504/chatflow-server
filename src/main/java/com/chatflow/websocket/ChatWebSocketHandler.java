@@ -8,6 +8,7 @@ import com.chatflow.common.error.BusinessException;
 import com.chatflow.infra.security.AuthPrincipal;
 import com.chatflow.infra.security.JwtService;
 import com.chatflow.infra.security.JwtTokenResolver;
+import com.chatflow.status.UserPresenceService;
 import com.chatflow.websocket.dto.WsClientMessage;
 import com.chatflow.websocket.dto.WsClientMessageType;
 import com.chatflow.websocket.dto.WsServerMessage;
@@ -28,6 +29,7 @@ public class ChatWebSocketHandler implements WebSocketHandler {
     private final ChatMessageService chatMessageService;
     private final ChatReadService chatReadService;
     private final ChatSessionRegistry sessionRegistry;
+    private final UserPresenceService userPresenceService;
     private final ObjectMapper objectMapper;
 
     @Override
@@ -39,14 +41,21 @@ public class ChatWebSocketHandler implements WebSocketHandler {
     }
 
     private Mono<Void> handleSession(WebSocketSession session, long userId) {
-        return session.receive()
-                .map(msg -> msg.getPayloadAsText())
-                .concatMap(text -> handleInbound(session, userId, text)
-                        .onErrorResume(BusinessException.class,
-                                ex -> sendError(session, ex.getMessage()))
-                        .onErrorResume(ex -> sendError(session, "Request failed")))
-                .doFinally(signal -> sessionRegistry.removeSession(session))
-                .then();
+        sessionRegistry.registerUser(userId, session);
+        return userPresenceService.broadcastOnline(userId)
+                .then(session.receive()
+                        .map(msg -> msg.getPayloadAsText())
+                        .concatMap(text -> handleInbound(session, userId, text)
+                                .onErrorResume(BusinessException.class,
+                                        ex -> sendError(session, ex.getMessage()))
+                                .onErrorResume(ex -> sendError(session, "Request failed")))
+                        .doFinally(signal -> {
+                            sessionRegistry.removeSession(session);
+                            if (!sessionRegistry.isOnline(userId)) {
+                                userPresenceService.broadcastOffline(userId).subscribe();
+                            }
+                        })
+                        .then());
     }
 
     private Mono<AuthPrincipal> authenticate(WebSocketSession session) {

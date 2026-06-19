@@ -4,5 +4,7 @@ public enum WsServerMessageType {
     JOINED,
     LEFT,
     MESSAGE,
-    ERROR
+    ERROR,
+    USER_ONLINE,
+    USER_OFFLINE
 }
