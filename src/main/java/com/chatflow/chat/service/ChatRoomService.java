@@ -73,6 +73,7 @@ public class ChatRoomService {
                             Mono<String> roomName = buildDirectRoomName(requesterId, targetUserId);
                             return roomName.flatMap(name -> chatRoomRepository.save(ChatRoom.builder()
                                             .roomName(name)
+                                            .roomType(RoomType.DIRECT)
                                             .createdAt(Instant.now())
                                             .build())
                                     .flatMap(room -> addMembers(room.getId(), List.of(requesterId, targetUserId))
@@ -96,6 +97,7 @@ public class ChatRoomService {
         return validateUsersExist(memberIds)
                 .then(Mono.defer(() -> chatRoomRepository.save(ChatRoom.builder()
                                 .roomName(roomName.trim())
+                                .roomType(RoomType.GROUP)
                                 .createdAt(Instant.now())
                                 .build())
                         .flatMap(room -> addMembers(room.getId(), new ArrayList<>(memberIds)).thenReturn(room))))
@@ -144,7 +146,9 @@ public class ChatRoomService {
                     List<RoomMemberResponse> members = tuple.getT1().getT1();
                     int count = tuple.getT1().getT2().intValue();
                     long unreadCount = tuple.getT2();
-                    RoomType type = count == 2 ? RoomType.DIRECT : RoomType.GROUP;
+                    RoomType type = room.getRoomType() != null
+                            ? room.getRoomType()
+                            : (count == 2 ? RoomType.DIRECT : RoomType.GROUP);
                     return new RoomResponse(
                             roomId,
                             room.getRoomName(),

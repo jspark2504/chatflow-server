@@ -21,6 +21,9 @@ public class ChatRoom {
     private Long id;
     private String roomName;
 
+    @Column("room_type")
+    private RoomType roomType;
+
     @Column("created_at")
     private Instant createdAt;
 }
