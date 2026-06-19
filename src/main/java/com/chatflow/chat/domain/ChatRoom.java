@@ -26,4 +26,7 @@ public class ChatRoom {
 
     @Column("created_at")
     private Instant createdAt;
+
+    @Column("last_message_at")
+    private Instant lastMessageAt;
 }

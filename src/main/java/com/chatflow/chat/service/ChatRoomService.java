@@ -155,6 +155,7 @@ public class ChatRoomService {
                             unreadCount,
                             member.getLastReadMessageId(),
                             room.getCreatedAt(),
+                            room.getLastMessageAt(),
                             members);
                 }));
     }

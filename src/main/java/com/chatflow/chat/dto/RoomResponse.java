@@ -13,6 +13,7 @@ public record RoomResponse(
         long unreadCount,
         Long lastReadMessageId,
         Instant createdAt,
+        Instant lastMessageAt,
         List<RoomMemberResponse> members
 ) {
 }

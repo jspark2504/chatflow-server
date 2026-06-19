@@ -6,14 +6,19 @@ import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.time.Instant;
+
 public interface ChatRoomRepository extends ReactiveCrudRepository<ChatRoom, Long> {
 
     @Query("""
             SELECT cr.* FROM chat_room cr
             WHERE cr.id IN (SELECT room_id FROM chat_room_member WHERE user_id = :userId)
-            ORDER BY cr.created_at DESC
+            ORDER BY COALESCE(cr.last_message_at, cr.created_at) DESC
             """)
     Flux<ChatRoom> findAllByMemberUserId(long userId);
+
+    @Query("UPDATE chat_room SET last_message_at = :ts WHERE id = :roomId")
+    Mono<Void> updateLastMessageAt(long roomId, Instant ts);
 
     @Query("""
             SELECT cr.id FROM chat_room cr

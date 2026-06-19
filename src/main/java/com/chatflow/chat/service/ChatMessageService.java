@@ -5,6 +5,7 @@ import com.chatflow.chat.dto.MessagePageResponse;
 import com.chatflow.chat.dto.MessageResponse;
 import com.chatflow.chat.dto.SendMessageRequest;
 import com.chatflow.chat.repository.ChatMessageRepository;
+import com.chatflow.chat.repository.ChatRoomRepository;
 import com.chatflow.common.error.BusinessException;
 import com.chatflow.kafka.ChatMessageKafkaPublisher;
 import com.chatflow.redis.ChatMessageRedisPublisher;
@@ -24,6 +25,7 @@ public class ChatMessageService {
     private static final int MAX_PAGE_SIZE = 200;
 
     private final ChatMessageRepository chatMessageRepository;
+    private final ChatRoomRepository chatRoomRepository;
     private final ChatRoomService chatRoomService;
     private final ChatMessageRedisPublisher chatMessageRedisPublisher;
     private final ChatMessageKafkaPublisher chatMessageKafkaPublisher;
@@ -47,7 +49,8 @@ public class ChatMessageService {
                                 HttpStatus.INTERNAL_SERVER_ERROR, "Message id missing after save"));
                     }
                     MessageResponse response = toResponse(saved);
-                    return chatMessageRedisPublisher.publish(roomId, response)
+                    return chatRoomRepository.updateLastMessageAt(roomId, saved.getCreatedAt())
+                            .then(chatMessageRedisPublisher.publish(roomId, response))
                             .then(chatMessageKafkaPublisher.publish(roomId, response))
                             .thenReturn(response);
                 });
