@@ -3,7 +3,7 @@ package com.chatflow.status;
 import com.chatflow.chat.domain.ChatRoomMember;
 import com.chatflow.chat.repository.ChatRoomMemberRepository;
 import com.chatflow.infra.security.CurrentUser;
-import com.chatflow.websocket.ChatSessionRegistry;
+import com.chatflow.redis.RedisPresenceRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,7 +13,6 @@ import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -23,7 +22,7 @@ import java.util.stream.Collectors;
 public class OnlineStatusController {
 
     private final ChatRoomMemberRepository chatRoomMemberRepository;
-    private final ChatSessionRegistry sessionRegistry;
+    private final RedisPresenceRepository presenceRepository;
 
     @GetMapping("/online-users")
     public Mono<List<Long>> getOnlineUsers() {
@@ -39,9 +38,12 @@ public class OnlineStatusController {
                             .doOnNext(uid -> log.debug("[online] room member uid={} (me={})", uid, myUserId))
                             .filter(uid -> uid != myUserId)
                             .collect(Collectors.toSet())
-                            .map(contactIds -> {
-                                Set<Long> onlineIds = sessionRegistry.getOnlineUserIds(contactIds);
-                                log.debug("[online] contactIds={} onlineIds={}", contactIds, onlineIds);
+                            .flatMap(contactIds -> {
+                                log.debug("[online] contactIds={}", contactIds);
+                                return presenceRepository.getOnlineUserIds(contactIds);
+                            })
+                            .map(onlineIds -> {
+                                log.debug("[online] onlineIds={}", onlineIds);
                                 return new ArrayList<>(onlineIds);
                             });
                 });

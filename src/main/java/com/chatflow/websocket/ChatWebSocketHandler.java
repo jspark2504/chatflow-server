@@ -8,6 +8,7 @@ import com.chatflow.common.error.BusinessException;
 import com.chatflow.infra.security.AuthPrincipal;
 import com.chatflow.infra.security.JwtService;
 import com.chatflow.infra.security.JwtTokenResolver;
+import com.chatflow.redis.RedisPresenceRepository;
 import com.chatflow.status.UserPresenceService;
 import com.chatflow.websocket.dto.WsClientMessage;
 import com.chatflow.websocket.dto.WsClientMessageType;
@@ -31,6 +32,7 @@ public class ChatWebSocketHandler implements WebSocketHandler {
     private final ChatMessageService chatMessageService;
     private final ChatReadService chatReadService;
     private final ChatSessionRegistry sessionRegistry;
+    private final RedisPresenceRepository presenceRepository;
     private final UserPresenceService userPresenceService;
     private final ObjectMapper objectMapper;
 
@@ -48,7 +50,11 @@ public class ChatWebSocketHandler implements WebSocketHandler {
     private Mono<Void> handleSession(WebSocketSession session, long userId) {
         log.debug("[WS] CONNECTED userId={} session={}", userId, session.getId());
         sessionRegistry.registerUser(userId, session);
-        log.debug("[WS] registerUser done userId={} online={}", userId, sessionRegistry.isOnline(userId));
+        log.debug("[WS] registerUser done userId={} localOnline={}", userId, sessionRegistry.hasLocalSessions(userId));
+
+        // Fire-and-forget: update global Redis presence
+        presenceRepository.markOnline(userId).subscribe();
+
         return userPresenceService.broadcastOnline(userId)
                 .then(session.receive()
                         .map(msg -> msg.getPayloadAsText())
@@ -57,10 +63,15 @@ public class ChatWebSocketHandler implements WebSocketHandler {
                                         ex -> sendError(session, ex.getMessage()))
                                 .onErrorResume(ex -> sendError(session, "Request failed")))
                         .doFinally(signal -> {
-                            sessionRegistry.removeSession(session);
-                            log.debug("[WS] DISCONNECTED userId={} session={} signal={}", userId, session.getId(), signal);
-                            if (!sessionRegistry.isOnline(userId)) {
-                                userPresenceService.broadcastOffline(userId).subscribe();
+                            boolean wasLastLocal = sessionRegistry.removeSession(session);
+                            log.debug("[WS] DISCONNECTED userId={} session={} signal={} wasLastLocal={}",
+                                    userId, session.getId(), signal, wasLastLocal);
+                            if (wasLastLocal) {
+                                // Last session on this server: update Redis and broadcast offline if globally gone
+                                presenceRepository.removeLastSessionFromServer(userId)
+                                        .filter(globallyOffline -> globallyOffline)
+                                        .flatMap(__ -> userPresenceService.broadcastOffline(userId))
+                                        .subscribe();
                             }
                         })
                         .then());

@@ -31,15 +31,10 @@ public class ChatSessionRegistry {
         globalSessions.add(session);
     }
 
-    public boolean isOnline(long userId) {
+    /** True if this server still has at least one open session for the user. */
+    public boolean hasLocalSessions(long userId) {
         Set<WebSocketSession> sessions = userSessions.get(userId);
         return sessions != null && !sessions.isEmpty();
-    }
-
-    public Set<Long> getOnlineUserIds(Set<Long> candidates) {
-        return candidates.stream()
-                .filter(this::isOnline)
-                .collect(java.util.stream.Collectors.toSet());
     }
 
     /** 현재 연결된 모든 세션에 브로드캐스트 (프레즌스 이벤트용) */
@@ -71,7 +66,13 @@ public class ChatSessionRegistry {
         }
     }
 
-    public void removeSession(WebSocketSession session) {
+    /**
+     * Removes all traces of this session (rooms + user presence).
+     *
+     * @return true if this was the last session for the user on this server,
+     *         meaning the caller should update the global Redis presence state.
+     */
+    public boolean removeSession(WebSocketSession session) {
         // room cleanup
         Set<Long> rooms = sessionRooms.remove(session.getId());
         if (rooms != null) {
@@ -90,9 +91,13 @@ public class ChatSessionRegistry {
             Set<WebSocketSession> sessions = userSessions.get(userId);
             if (sessions != null) {
                 sessions.remove(session);
-                if (sessions.isEmpty()) userSessions.remove(userId, sessions);
+                if (sessions.isEmpty()) {
+                    userSessions.remove(userId, sessions);
+                    return true; // last session on this server
+                }
             }
         }
+        return false;
     }
 
     /** 특정 방에 JOIN한 세션들에게 브로드캐스트 (채팅 메시지용) */
