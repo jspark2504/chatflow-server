@@ -1,8 +1,6 @@
 package com.chatflow.status;
 
-import com.chatflow.websocket.ChatSessionRegistry;
-import com.chatflow.websocket.dto.WsServerMessage;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.chatflow.redis.PresenceRedisPublisher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
@@ -11,19 +9,13 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class UserPresenceService {
 
-    private final ChatSessionRegistry sessionRegistry;
-    private final ObjectMapper objectMapper;
+    private final PresenceRedisPublisher presenceRedisPublisher;
 
     public Mono<Void> broadcastOnline(long userId) {
-        return broadcast(WsServerMessage.userOnline(userId));
+        return presenceRedisPublisher.publish(userId, true);
     }
 
     public Mono<Void> broadcastOffline(long userId) {
-        return broadcast(WsServerMessage.userOffline(userId));
-    }
-
-    private Mono<Void> broadcast(WsServerMessage msg) {
-        return Mono.fromCallable(() -> objectMapper.writeValueAsString(msg))
-                .flatMap(sessionRegistry::broadcastToAll);
+        return presenceRedisPublisher.publish(userId, false);
     }
 }
