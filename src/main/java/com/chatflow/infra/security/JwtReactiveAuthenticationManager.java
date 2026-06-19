@@ -6,6 +6,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
@@ -30,6 +31,8 @@ public class JwtReactiveAuthenticationManager implements ReactiveAuthenticationM
                     return Mono.just(authenticated);
                 })
                 .switchIfEmpty(Mono.error(new BadCredentialsException("Invalid token")))
-                .onErrorMap(JwtException.class, ex -> new BadCredentialsException("Invalid token", ex));
+                .onErrorMap(JwtException.class, ex -> new BadCredentialsException("Invalid token", ex))
+                .onErrorMap(ex -> !(ex instanceof AuthenticationException),
+                        ex -> new BadCredentialsException("Authentication failed", ex));
     }
 }

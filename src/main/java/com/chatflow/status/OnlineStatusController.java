@@ -30,7 +30,8 @@ public class OnlineStatusController {
         return CurrentUser.auth()
                 .flatMap(principal -> {
                     long myUserId = principal.userId();
-                    return chatRoomMemberRepository.findRoomIdsByUserId(myUserId)
+                    return chatRoomMemberRepository.findByUserId(myUserId)
+                            .map(ChatRoomMember::getRoomId)
                             .flatMap(chatRoomMemberRepository::findByRoomId)
                             .map(ChatRoomMember::getUserId)
                             .filter(uid -> uid != myUserId)

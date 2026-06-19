@@ -13,7 +13,7 @@ public final class CurrentUser {
 
     public static Mono<AuthPrincipal> auth() {
         return ReactiveSecurityContextHolder.getContext()
-                .map(ctx -> ctx.getAuthentication())
+                .flatMap(ctx -> Mono.justOrEmpty(ctx.getAuthentication()))
                 .filter(Authentication::isAuthenticated)
                 .map(Authentication::getPrincipal)
                 .filter(AuthPrincipal.class::isInstance)
