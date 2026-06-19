@@ -56,6 +56,11 @@ public class ChatWebSocketHandler implements WebSocketHandler {
         presenceRepository.markOnline(userId).subscribe();
 
         return userPresenceService.broadcastOnline(userId)
+                .onErrorResume(ex -> {
+                    log.warn("[WS] broadcastOnline failed userId={} — presence skipped, chat continues; reason={}",
+                            userId, ex.getMessage());
+                    return Mono.empty();
+                })
                 .then(session.receive()
                         .map(msg -> msg.getPayloadAsText())
                         .concatMap(text -> handleInbound(session, userId, text)
@@ -67,11 +72,14 @@ public class ChatWebSocketHandler implements WebSocketHandler {
                             log.debug("[WS] DISCONNECTED userId={} session={} signal={} wasLastLocal={}",
                                     userId, session.getId(), signal, wasLastLocal);
                             if (wasLastLocal) {
-                                // Last session on this server: update Redis and broadcast offline if globally gone
                                 presenceRepository.removeLastSessionFromServer(userId)
                                         .filter(globallyOffline -> globallyOffline)
                                         .flatMap(__ -> userPresenceService.broadcastOffline(userId))
-                                        .subscribe();
+                                        .subscribe(
+                                                null,
+                                                ex -> log.warn("[WS] broadcastOffline failed userId={} — presence skipped; reason={}",
+                                                        userId, ex.getMessage())
+                                        );
                             }
                         })
                         .then());
