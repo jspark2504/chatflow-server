@@ -146,9 +146,7 @@ public class ChatRoomService {
                     List<RoomMemberResponse> members = tuple.getT1().getT1();
                     int count = tuple.getT1().getT2().intValue();
                     long unreadCount = tuple.getT2();
-                    RoomType type = room.getRoomType() != null
-                            ? room.getRoomType()
-                            : (count == 2 ? RoomType.DIRECT : RoomType.GROUP);
+                    RoomType type = room.getRoomType() != null ? room.getRoomType() : RoomType.GROUP;
                     return new RoomResponse(
                             roomId,
                             room.getRoomName(),
