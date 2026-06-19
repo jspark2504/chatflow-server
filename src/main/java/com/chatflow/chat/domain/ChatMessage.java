@@ -37,4 +37,7 @@ public class ChatMessage {
 
     @Column("created_at")
     private Instant createdAt;
+
+    @Column("client_id")
+    private String clientId;
 }

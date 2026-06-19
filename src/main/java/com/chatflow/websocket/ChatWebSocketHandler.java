@@ -131,8 +131,18 @@ public class ChatWebSocketHandler implements WebSocketHandler {
         }
         SendMessageRequest request = new SendMessageRequest(
                 inbound.content().trim(),
-                inbound.messageType());
-        return chatMessageService.sendMessage(roomId, userId, request).then();
+                inbound.messageType(),
+                inbound.clientId());
+        return chatMessageService.sendMessage(roomId, userId, request)
+                .flatMap(result -> {
+                    if (result.isDuplicate()) {
+                        // 중복 재전송: Redis 발행 없이 sender에게만 echo해서 pending 해제
+                        log.debug("[WS] duplicate clientId={} userId={} roomId={} — echo only",
+                                inbound.clientId(), userId, roomId);
+                        return send(session, WsServerMessage.message(result.response()));
+                    }
+                    return Mono.empty(); // 정상 경로: echo는 Redis pub/sub으로 전달
+                });
     }
 
     private Mono<Void> sendError(WebSocketSession session, String message) {

@@ -4,12 +4,14 @@ import com.chatflow.chat.domain.ChatMessage;
 import com.chatflow.chat.dto.MessagePageResponse;
 import com.chatflow.chat.dto.MessageResponse;
 import com.chatflow.chat.dto.SendMessageRequest;
+import com.chatflow.chat.dto.SendMessageResult;
 import com.chatflow.chat.repository.ChatMessageRepository;
 import com.chatflow.chat.repository.ChatRoomRepository;
 import com.chatflow.common.error.BusinessException;
 import com.chatflow.kafka.ChatMessageKafkaPublisher;
 import com.chatflow.redis.ChatMessageRedisPublisher;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
@@ -30,10 +32,14 @@ public class ChatMessageService {
     private final ChatMessageRedisPublisher chatMessageRedisPublisher;
     private final ChatMessageKafkaPublisher chatMessageKafkaPublisher;
 
-    public Mono<MessageResponse> sendMessage(long roomId, long senderId, SendMessageRequest request) {
+    public Mono<SendMessageResult> sendMessage(long roomId, long senderId, SendMessageRequest request) {
         String type = request.messageType() == null || request.messageType().isBlank()
                 ? "TEXT"
                 : request.messageType().trim();
+        String clientId = request.clientId() == null || request.clientId().isBlank()
+                ? null
+                : request.clientId().trim();
+
         return chatRoomService.requireMember(roomId, senderId)
                 .then(Mono.defer(() -> chatMessageRepository.save(ChatMessage.builder()
                         .roomId(roomId)
@@ -42,6 +48,7 @@ public class ChatMessageService {
                         .messageContent(request.content().trim())
                         .isRead(false)
                         .createdAt(Instant.now())
+                        .clientId(clientId)
                         .build())))
                 .flatMap(saved -> {
                     if (saved.getId() == null) {
@@ -52,7 +59,16 @@ public class ChatMessageService {
                     return chatRoomRepository.updateLastMessageAt(roomId, saved.getCreatedAt())
                             .then(chatMessageRedisPublisher.publish(roomId, response))
                             .then(chatMessageKafkaPublisher.publish(roomId, response))
-                            .thenReturn(response);
+                            .thenReturn(new SendMessageResult(response, false));
+                })
+                // clientId가 있고 UNIQUE 제약 위반이면 기존 메시지를 조회해 echo-only 반환
+                .onErrorResume(DataIntegrityViolationException.class, ex -> {
+                    if (clientId == null) {
+                        return Mono.error(ex);
+                    }
+                    return chatMessageRepository.findByRoomIdAndSenderIdAndClientId(roomId, senderId, clientId)
+                            .switchIfEmpty(Mono.error(ex))
+                            .map(existing -> new SendMessageResult(toResponse(existing), true));
                 });
     }
 
@@ -85,6 +101,7 @@ public class ChatMessageService {
                 message.getMessageType(),
                 message.getMessageContent(),
                 Boolean.TRUE.equals(message.getIsRead()),
-                message.getCreatedAt());
+                message.getCreatedAt(),
+                message.getClientId());
     }
 }

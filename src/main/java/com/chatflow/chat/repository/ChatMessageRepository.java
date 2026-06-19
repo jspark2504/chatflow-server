@@ -37,4 +37,10 @@ public interface ChatMessageRepository extends ReactiveCrudRepository<ChatMessag
             WHERE room_id = :roomId
             """)
     Mono<Long> findMaxMessageIdByRoomId(long roomId);
+
+    @Query("""
+            SELECT * FROM chat_message
+            WHERE room_id = :roomId AND sender_id = :senderId AND client_id = :clientId
+            """)
+    Mono<ChatMessage> findByRoomIdAndSenderIdAndClientId(long roomId, long senderId, String clientId);
 }

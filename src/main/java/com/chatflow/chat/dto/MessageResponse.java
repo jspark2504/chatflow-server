@@ -9,6 +9,7 @@ public record MessageResponse(
         String messageType,
         String content,
         boolean read,
-        Instant createdAt
+        Instant createdAt,
+        String clientId
 ) {
 }
