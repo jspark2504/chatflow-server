@@ -39,16 +39,16 @@ public class ChatWebSocketHandler implements WebSocketHandler {
         return authenticate(session)
                 .flatMap(principal -> handleSession(session, principal.userId()))
                 .onErrorResume(ex -> {
-                    log.warn("[WS] Auth failed session={} reason={}", session.getId(), ex.getMessage());
+                    log.debug("[WS] Auth failed session={} reason={}", session.getId(), ex.getMessage());
                     return sendError(session, "Invalid or missing token").then(session.close());
                 })
                 .switchIfEmpty(sendError(session, "Invalid or missing token").then(session.close()));
     }
 
     private Mono<Void> handleSession(WebSocketSession session, long userId) {
-        log.info("[WS] CONNECTED userId={} session={}", userId, session.getId());
+        log.debug("[WS] CONNECTED userId={} session={}", userId, session.getId());
         sessionRegistry.registerUser(userId, session);
-        log.info("[WS] registerUser done userId={} online={}", userId, sessionRegistry.isOnline(userId));
+        log.debug("[WS] registerUser done userId={} online={}", userId, sessionRegistry.isOnline(userId));
         return userPresenceService.broadcastOnline(userId)
                 .then(session.receive()
                         .map(msg -> msg.getPayloadAsText())
@@ -58,7 +58,7 @@ public class ChatWebSocketHandler implements WebSocketHandler {
                                 .onErrorResume(ex -> sendError(session, "Request failed")))
                         .doFinally(signal -> {
                             sessionRegistry.removeSession(session);
-                            log.info("[WS] DISCONNECTED userId={} session={} signal={}", userId, session.getId(), signal);
+                            log.debug("[WS] DISCONNECTED userId={} session={} signal={}", userId, session.getId(), signal);
                             if (!sessionRegistry.isOnline(userId)) {
                                 userPresenceService.broadcastOffline(userId).subscribe();
                             }
