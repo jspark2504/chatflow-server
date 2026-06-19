@@ -6,6 +6,7 @@ import com.chatflow.chat.dto.MessagePageResponse;
 import com.chatflow.chat.dto.MessageResponse;
 import com.chatflow.chat.dto.RoomResponse;
 import com.chatflow.chat.dto.SendMessageRequest;
+import com.chatflow.chat.dto.SendMessageResult;
 import com.chatflow.chat.service.ChatMessageService;
 import com.chatflow.chat.service.ChatReadService;
 import com.chatflow.chat.service.ChatRoomService;
@@ -59,7 +60,8 @@ public class ChatController {
             @PathVariable long roomId,
             @Valid @RequestBody Mono<SendMessageRequest> body) {
         return Mono.zip(body, CurrentUser.auth())
-                .flatMap(t -> chatMessageService.sendMessage(roomId, t.getT2().userId(), t.getT1()));
+                .flatMap(t -> chatMessageService.sendMessage(roomId, t.getT2().userId(), t.getT1()))
+                .map(SendMessageResult::response);
     }
 
     @GetMapping("/rooms/{roomId:\\d+}/messages")
