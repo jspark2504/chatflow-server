@@ -2,7 +2,7 @@ spring:
   application:
     name: chatflow-server
   r2dbc:
-    url: r2dbc:mysql://localhost:3306/chatflow?sslMode=DISABLED&allowPublicKeyRetrieval=true
+    url: r2dbc:mysql://localhost:3309/chatflow?sslMode=DISABLED&allowPublicKeyRetrieval=true
     username: chatflow
     password: chatflow
   data:
@@ -23,7 +23,7 @@ spring:
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
   flyway:
     enabled: true
-    url: jdbc:mysql://localhost:3306/chatflow?sslMode=DISABLED&allowPublicKeyRetrieval=true&useUnicode=true&characterEncoding=UTF-8&connectionCollation=utf8mb4_unicode_ci
+    url: jdbc:mysql://localhost:3309/chatflow?sslMode=DISABLED&allowPublicKeyRetrieval=true&useUnicode=true&characterEncoding=UTF-8&connectionCollation=utf8mb4_unicode_ci
     user: chatflow
     password: chatflow
     locations: classpath:db/migration
