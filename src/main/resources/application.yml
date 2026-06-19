@@ -39,4 +39,5 @@ chatflow:
 logging:
   level:
     com.chatflow: INFO
+    com.chatflow.status: DEBUG
     org.springframework.r2dbc: DEBUG
