@@ -43,4 +43,10 @@ public class ChatMessage {
 
     @Column("published_at")
     private Instant publishedAt;
+
+    @Column("retry_count")
+    private int retryCount;
+
+    @Column("publish_failed_at")
+    private Instant publishFailedAt;
 }

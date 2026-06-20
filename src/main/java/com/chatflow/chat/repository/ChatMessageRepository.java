@@ -50,4 +50,24 @@ public interface ChatMessageRepository extends ReactiveCrudRepository<ChatMessag
     @Modifying
     @Query("UPDATE chat_message SET published_at = :publishedAt WHERE id = :id")
     Mono<Integer> markAsPublished(Long id, Instant publishedAt);
+
+    // TODO: 멀티 인스턴스 전환 시 FOR UPDATE SKIP LOCKED + 트랜잭션으로 교체 필요
+    @Query("""
+            SELECT * FROM chat_message
+            WHERE published_at IS NULL
+              AND publish_failed_at IS NULL
+              AND retry_count < :maxRetry
+              AND created_at > :since
+            ORDER BY id ASC
+            LIMIT :limit
+            """)
+    Flux<ChatMessage> findUnpublished(int maxRetry, Instant since, int limit);
+
+    @Modifying
+    @Query("UPDATE chat_message SET retry_count = retry_count + 1 WHERE id = :id")
+    Mono<Integer> incrementRetryCount(Long id);
+
+    @Modifying
+    @Query("UPDATE chat_message SET publish_failed_at = :failedAt WHERE id = :id")
+    Mono<Integer> markAsFailed(Long id, Instant failedAt);
 }
