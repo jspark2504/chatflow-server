@@ -1,10 +1,13 @@
 package com.chatflow.chat.repository;
 
 import com.chatflow.chat.domain.ChatMessage;
+import org.springframework.data.r2dbc.repository.Modifying;
 import org.springframework.data.r2dbc.repository.Query;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.time.Instant;
 
 public interface ChatMessageRepository extends ReactiveCrudRepository<ChatMessage, Long> {
 
@@ -43,4 +46,8 @@ public interface ChatMessageRepository extends ReactiveCrudRepository<ChatMessag
             WHERE room_id = :roomId AND sender_id = :senderId AND client_id = :clientId
             """)
     Mono<ChatMessage> findByRoomIdAndSenderIdAndClientId(long roomId, long senderId, String clientId);
+
+    @Modifying
+    @Query("UPDATE chat_message SET published_at = :publishedAt WHERE id = :id")
+    Mono<Integer> markAsPublished(Long id, Instant publishedAt);
 }

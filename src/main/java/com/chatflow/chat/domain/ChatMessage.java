@@ -40,4 +40,7 @@ public class ChatMessage {
 
     @Column("client_id")
     private String clientId;
+
+    @Column("published_at")
+    private Instant publishedAt;
 }
