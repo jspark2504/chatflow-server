@@ -11,6 +11,7 @@ import com.chatflow.common.error.BusinessException;
 import com.chatflow.kafka.ChatMessageKafkaPublisher;
 import com.chatflow.redis.ChatMessageRedisPublisher;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,7 @@ import reactor.core.publisher.Mono;
 import java.time.Instant;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ChatMessageService {
@@ -57,9 +59,17 @@ public class ChatMessageService {
                     }
                     MessageResponse response = toResponse(saved);
                     return chatRoomRepository.updateLastMessageAt(roomId, saved.getCreatedAt())
-                            .then(chatMessageRedisPublisher.publish(roomId, response))
-                            .then(chatMessageKafkaPublisher.publish(roomId, response))
-                            .thenReturn(new SendMessageResult(response, false));
+                            .thenReturn(new SendMessageResult(response, false))
+                            .doOnSuccess(r -> {
+                                chatMessageRedisPublisher.publish(roomId, response)
+                                        .then(chatMessageRepository.markAsPublished(saved.getId(), Instant.now()))
+                                        .onErrorResume(e -> {
+                                            log.error("Redis publish failed for messageId={} roomId={}", saved.getId(), roomId, e);
+                                            return Mono.empty();
+                                        })
+                                        .subscribe();
+                                chatMessageKafkaPublisher.publish(roomId, response).subscribe();
+                            });
                 })
                 // clientId가 있고 UNIQUE 제약 위반이면 기존 메시지를 조회해 echo-only 반환
                 .onErrorResume(DataIntegrityViolationException.class, ex -> {
